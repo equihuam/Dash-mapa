@@ -22,32 +22,17 @@ mapas_iie <- list.files(paste0(dir_shp, "Mex-IIE-ZVH-Albers/Capas/Estados/"),
 mapa_iie_muni_r <- 100 * rast(mapas_iie[30])
 
 mapas_iie_muni_v <- list.files(paste0(dir_shp, 
-                                    "Mex-IIE-ZVH-Albers/Capas/Estados/"),
-                             pattern = ".gpkg$",
-                             full.names = TRUE)
-mapa_muni_v <- vect(mapas_iie_muni_v[30]) 
-mapa_muni_v$IIE_2018_mean <- mapa_muni_v$IIE_2018_mean * 100
-
-WGS84 <- "+init=EPSG:4326"
-#mapa_1 <- project(mapas_muni_v, WGS84)
-mapa <- vect(mapas_iie_muni_v[30]) 
-mapa_ver <- mapa |> 
-        project(WGS84) |> 
-        mutate(IIE_2018_mean = IIE_2018_mean * 100, 
-               id = 1:n()) |> 
-        st_as_sf()
-
-mapa <- vect(mapas_iie_muni_v[1]) 
-mapa_agu <- mapa |> 
-  project(WGS84) |> 
-  mutate(IIE_2018_mean = IIE_2018_mean * 100, 
-         id = 1:n()) |> 
-  st_as_sf()
-
-mapa <- mapa_ver
+                                      "Mex-IIE-ZVH-Albers/Capas/Estados/"),
+                               pattern = ".gpkg$",
+                               full.names = TRUE)
 
 bins<-c(0,12.5,25,37.5,50, 62.5,75,87.5, 100,Inf)
 cal <- colorBin(palette="RdYlGn", domain = mapa_ver$IIE_2018_mean., bins=bins)
+
+mapa_muni_v |> 
+  filter((IIE_2018_mean <= 30) &
+         (IIE_2018_mean > 20)) |> 
+  plot("IIE_2018_mean")
 
 ggplot(tibble(x = values(mapa_iie_muni_r)), 
        aes(x = x, y = ..density..)) + 
@@ -65,8 +50,8 @@ ui = dashboardPage(
       title = "Promedios Municipales",
       header = dashboardHeader(title = "Integridad Ecosistémica"),
       
-      sidebar = dashboardSidebar(collapsed = FALSE, width = 300, 
-                      selectInput(inputId = "estado", 
+      sidebar = dashboardSidebar(collapsed = FALSE, width = 350, 
+                        selectInput(inputId = "estado", 
                                     "Elige la entidad", 
                                     choices = edos_lista,
                                     selected = "Veracruz de Ignacio de la Llave"),
@@ -99,14 +84,16 @@ ui = dashboardPage(
 server = function(input, output, session) {
 
   output$map <-  renderLeaflet({
-      leaflet(mapa()) |> 
-      addPolygons(data = mapa(),
-                  fillColor = ~ cal(IIE_2018_mean),
+      mapa() |> 
+      filter((IIE_2018_mean <= input$iie_max) &
+             (IIE_2018_mean > input$iie_min)) |> 
+      leaflet() |> 
+      addPolygons(fillColor = ~ cal(IIE_2018_mean),
                   fillOpacity = 1,
                   stroke = FALSE,
                   layerId = ~ id,
                   smoothFactor = 0.03) |> 
-      addPolygons(data = mapa_ver,
+      addPolygons(data = mapa(),
                   fillOpacity = 0,
                   weight = 0.1,
                   color = "gray",
@@ -130,11 +117,15 @@ server = function(input, output, session) {
   # Cambio de mapa
   output$edo_tit <- renderText({input$estado})
 
-  mapa <- reactive({switch (input$estado,
-                      "Veracruz" = mapa_ver[(mapa_ver$IIE_2018_mean <= input$iie_max) &
-                                            (mapa_ver$IIE_2018_mean > input$iie_min) ,],
-                      "Aguascalientes" = mapa_agu[(mapa_agu$IIE_2018_mean <=  input$iie_max) &
-                                                  (mapa_agu$IIE_2018_mean > input$iie_min) ,])})
+  mapa <- reactive({
+            mapa <- vect(mapas_iie_muni_v[grepl(input$estado, 
+                           mapas_iie_muni_v)]) 
+            mapa <- mapa |> 
+              project(WGS84) |> 
+              mutate(IIE_2018_mean = IIE_2018_mean * 100,
+                     id = 1:n()) |>
+              st_as_sf()
+                      })
                                                    
   #click on polygon
   observeEvent(input$map_shape_click, {
