@@ -24,11 +24,14 @@ mapas_iie_muni_v <- list.files("./Estados/",
                                pattern = ".gpkg$",
                                full.names = TRUE)
 
-mapa_ver <- vect(mapas_iie_muni_v[30])
-mapa_ver$IIE_2018_mean <- 100 * mapa_ver$IIE_2018_mean
+mapa_agu <- vect(mapas_iie_muni_v[1])
+mapa_agu$IIE_2018_mean <- 100 * mapa_agu$IIE_2018_mean
 bins<-c(0,12.5,25,37.5,50, 62.5,75,87.5, 100,Inf)
-cal <- colorBin(palette="RdYlGn", domain = mapa_ver$IIE_2018_mean., 
+cal <- colorBin(palette="RdYlGn", 
+                domain = mapa_agu$IIE_2018_mean, 
                 bins=bins)
+# WeHotel2024
+WGS84 <- "+init=EPSG:4326"
 
 edos_lista <- unlist(lapply(mapas_iie_muni_v, function(x) 
   sub(".gpkg", "", basename(x))))
@@ -42,13 +45,13 @@ ui = dashboardPage(
                         selectInput(inputId = "estado", 
                                     "Elige la entidad", 
                                     choices = edos_lista,
-                                    selected = "Veracruz de Ignacio de la Llave"),
+                                    selected = "Aguascalientes"),
                         sliderInput(inputId = "iie_min",
                                     "Límite mínimo:",
-                                    0, 100, value = 10),
+                                    0, 100, value = 0),
                         sliderInput(inputId = "iie_max",
                                     "Límite máximo:",
-                                    0, 100, value = 70),
+                                    0, 100, value = 100),
                         box(title = "Lugar", width = 12,
                             verbatimTextOutput("muni")),
                         box(width = 12, height = 170, 

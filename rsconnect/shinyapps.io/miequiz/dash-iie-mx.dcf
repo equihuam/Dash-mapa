@@ -1,0 +1,13 @@
+name: dash-iie-mx
+title: dash-iie-mx
+username: miequiz
+account: miequiz
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12932943
+bundleId: 9187649
+url: https://miequiz.shinyapps.io/dash-iie-mx/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData|app-2.R|CanalTransItsmico.R|temp-11cd/app.R|temp.html|temp.R|temp.Rmd|Veracruz.R
