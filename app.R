@@ -16,7 +16,7 @@ library(dplyr)
 #dir_shp <- paste0(dir_base, "03 Documentos en preparación/02 Libro UNAM/mapas/")
 #"Mex-IIE-ZVH-Albers/Capas"
 
-mapas_iie_r <- list.files("./Estados/",
+mapas_iie_muni_r <- list.files("./Estados/",
                         full.names = TRUE, 
                         pattern = ".tif$")
 
@@ -28,11 +28,11 @@ mapa_agu <- vect(mapas_iie_muni_v[1])
 mapa_agu$IIE_2018_mean <- 100 * mapa_agu$IIE_2018_mean
 bins<-c(0,12.5,25,37.5,50, 62.5,75,87.5, 100,Inf)
 cal <- colorBin(palette="RdYlGn", 
-                domain = mapa_agu$IIE_2018_mean, 
-                bins=bins)
-# WeHotel2024
-WGS84 <- "+init=EPSG:4326"
+                domain = c(0, 100), 
+                bins=bins,
+                na.color = "#00000000")
 
+WGS84 <- "+init=EPSG:4326"
 edos_lista <- unlist(lapply(mapas_iie_muni_v, function(x) 
   sub(".gpkg", "", basename(x))))
 
@@ -83,7 +83,6 @@ ui = dashboardPage(
                                                      height = 530)))))))
 
 server = function(input, output, session) {
-
   output$map <-  renderLeaflet({
       mapa() |> 
       filter((IIE_2018_mean <= input$iie_max) &
@@ -110,7 +109,7 @@ server = function(input, output, session) {
     addRasterImage(mapa_r(), colors = cal)})  
   
   output$iie_h <- renderPlot({
-    ggplot(tibble(x = values(mapa_r())), 
+    ggplot(x = tibble(values(mapa_r())), 
            aes(x = x, y = ..density..)) + 
       geom_histogram(fill = cal(seq(0, 100, by=2)), 
                      binwidth = 2, 
