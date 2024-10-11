@@ -33,8 +33,12 @@ cal <- colorBin(palette="RdYlGn",
                 na.color = "#00000000")
 
 WGS84 <- "+init=EPSG:4326"
-edos_lista <- unlist(lapply(mapas_iie_muni_v, function(x) 
-  sub(".gpkg", "", basename(x))))
+edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x) 
+                     sub(".gpkg", "", basename(x)))), 
+                     vect = mapas_iie_muni_v,
+                     rast = mapas_iie_muni_r) |> 
+              arrange(edo)
+
 
 ui = dashboardPage(
       title = "Promedios Municipales",
@@ -44,7 +48,7 @@ ui = dashboardPage(
       sidebar = dashboardSidebar(collapsed = FALSE, width = 280, 
                         selectInput(inputId = "estado", 
                                     "Elige la entidad", 
-                                    choices = edos_lista,
+                                    choices = edos_lista$edo,
                                     selected = "Aguascalientes"),
                         sliderInput(inputId = "iie_min",
                                     "Límite mínimo:",
@@ -95,7 +99,7 @@ server = function(input, output, session) {
                   smoothFactor = 0.03) |> 
       addPolygons(data = mapa(),
                   fillOpacity = 0,
-                  weight = 0.1,
+                  weight = 0.2,
                   color = "gray",
                   #popup = ~ NOMGEO,
                   layerId = ~ id,
@@ -109,7 +113,7 @@ server = function(input, output, session) {
     addRasterImage(mapa_r(), colors = cal)})  
   
   output$iie_h <- renderPlot({
-    ggplot(x = tibble(values(mapa_r())), 
+    ggplot(tibble(x = values(mapa_r(), na.rm = T)), 
            aes(x = x, y = ..density..)) + 
       geom_histogram(fill = cal(seq(0, 100, by=2)), 
                      binwidth = 2, 
@@ -124,17 +128,18 @@ server = function(input, output, session) {
   output$edo_tit2 <- renderText({input$estado})
 
   mapa <- reactive({
-            mapa <- vect(mapas_iie_muni_v[grepl(input$estado, 
-                           mapas_iie_muni_v)]) 
+            mapa <- vect(edos_lista$vect[grepl(input$estado, 
+                                         edos_lista$edo)][1]) 
             mapa <- mapa |> 
               project(WGS84) |> 
               mutate(IIE_2018_mean = IIE_2018_mean * 100,
                      id = 1:n()) |>
-              st_as_sf()})
+              st_as_sf() |> 
+              st_simplify(preserveTopology = TRUE, dTolerance = 1000)})
             
   mapa_r <- reactive({
-              mapa_r <- 100 * rast(mapas_iie_r[grepl(input$estado, 
-                                                     mapas_iie_r)])})
+              mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
+                                                   edos_lista$edo)][1])})
                                                    
   #click on polygon
   observeEvent(input$map_shape_click, {

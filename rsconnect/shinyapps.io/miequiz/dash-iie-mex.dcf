@@ -5,9 +5,9 @@ account: miequiz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 12920648
-bundleId: 9182225
+bundleId:
 url: https://miequiz.shinyapps.io/dash-iie-mex/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: app-2.R|CanalTransItsmico.R|temp.R|Veracruz.R
+ignoredFiles: .RData|app-2.R|CanalTransItsmico.R|temp-11cd/app.R|temp.html|temp.R|temp.Rmd|Veracruz.R
