@@ -1,12 +1,12 @@
-name: dash-iie-mex
-title: dash-iie-mex
+name: dash-iie-mx
+title: dash-iie-mx
 username: miequiz
 account: miequiz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
-appId: 12920648
-bundleId: 9209832
-url: https://miequiz.shinyapps.io/dash-iie-mex/
+appId: 12987927
+bundleId: 9209927
+url: https://miequiz.shinyapps.io/dash-iie-mx/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE

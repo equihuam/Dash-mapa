@@ -114,12 +114,14 @@ server = function(input, output, session) {
   
   output$iie_h <- renderPlot({
     ggplot(tibble(x = values(mapa_r(), na.rm = T)), 
-           aes(x = x, y = ..density..)) + 
+           aes(x = x, y = after_stat(density))) + 
       geom_histogram(fill = cal(seq(0, 100, by=2)), 
                      binwidth = 2, 
                      na.rm = TRUE, 
                      color="grey", 
                      show.legend = FALSE) +
+      ylab(label = "d(frecuencia)") +
+      xlab(label = "Condición ecosistémica") +
       scale_fill_brewer(palette = "RdYlGn") + 
       geom_vline(xintercept = mapa()$IIE_2018_mean[mapa()$id == input$map_shape_click$id])})
 
@@ -128,14 +130,13 @@ server = function(input, output, session) {
   output$edo_tit2 <- renderText({input$estado})
 
   mapa <- reactive({
-            mapa <- vect(edos_lista$vect[grepl(input$estado, 
+            mapa <- st_read(edos_lista$vect[grepl(input$estado, 
                                          edos_lista$edo)][1]) 
             mapa <- mapa |> 
-              project(WGS84) |> 
+              st_transform(WGS84) |> 
               mutate(IIE_2018_mean = IIE_2018_mean * 100,
-                     id = 1:n()) |>
-              st_as_sf() |> 
-              st_simplify(preserveTopology = TRUE, dTolerance = 1000)})
+                     id = 1:n()) |> 
+              st_simplify(preserveTopology = TRUE, dTolerance = 100)})
             
   mapa_r <- reactive({
               mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
