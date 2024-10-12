@@ -24,13 +24,12 @@ mapas_iie_muni_v <- list.files("./Estados/",
                                pattern = ".gpkg$",
                                full.names = TRUE)
 
-mapa_agu <- vect(mapas_iie_muni_v[1])
-mapa_agu$IIE_2018_mean <- 100 * mapa_agu$IIE_2018_mean
 bins<-c(0,12.5,25,37.5,50, 62.5,75,87.5, 100,Inf)
 cal <- colorBin(palette="RdYlGn", 
                 domain = c(0, 100), 
                 bins=bins,
                 na.color = "#00000000")
+
 
 WGS84 <- "+init=EPSG:4326"
 edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x) 
@@ -123,12 +122,17 @@ server = function(input, output, session) {
       ylab(label = "d(frecuencia)") +
       xlab(label = "Condición ecosistémica") +
       scale_fill_brewer(palette = "RdYlGn") + 
-      geom_vline(xintercept = mapa()$IIE_2018_mean[mapa()$id == input$map_shape_click$id])})
+      geom_vline(data = tibble(valores()), 
+                 aes(xintercept = valores),
+                 color = colores(), 
+                 linewidth = 0.5, 
+                 linetype = tipo_l())
+    }) 
 
   # Cambio de mapa
   output$edo_tit1 <- renderText({input$estado})
   output$edo_tit2 <- renderText({input$estado})
-
+  
   mapa <- reactive({
             mapa <- st_read(edos_lista$vect[grepl(input$estado, 
                                          edos_lista$edo)][1]) 
@@ -141,7 +145,44 @@ server = function(input, output, session) {
   mapa_r <- reactive({
               mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
                                                    edos_lista$edo)][1])})
-                                                   
+  cuantiles <- reactive ({quantile(values(mapa_r(),
+                                          na.rm = T),
+                                   c(0.333, 0.667),
+                                   na.rm=TRUE)})
+  
+  vals_ini <- reactive({
+      valores <- tibble(valores = cuantiles())
+     })
+  
+  valores <- reactive({
+               if(length(input$map_shape_click) == 0) return(vals_ini())
+                 else {
+                   iie <- mapa()$IIE_2018_mean[mapa()$id ==input$map_shape_click$id]
+                   valores <- tibble(valores = c(cuantiles(), iie))
+                 } 
+              })
+  
+  color_ini <- reactive(colores <- c("red", "red"))
+
+  colores <- reactive({ 
+                if (length(input$map_shape_click) > 0) 
+                  c("red", "red", "blue")
+                else return(color_ini())
+                })
+  
+  tipo_ini <- reactive(c("dotted", "dashed"))
+  
+  tipo_l <- reactive({
+              if(length(input$map_shape_click) == 0) 
+                return(tipo_ini())
+              else c("dotted", "dashed", "solid")})
+
+  reactive({
+    print(valores())
+    print(colores())
+    print((tipo_l()))
+  })
+  
   #click on polygon
   observeEvent(input$map_shape_click, {
     map_click <- input$map_shape_click
