@@ -38,6 +38,8 @@ edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x)
                      rast = mapas_iie_muni_r) |> 
               arrange(edo)
 
+cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.txt"))
+datos_edos <- read.csv("datos_edos.txt")
 
 ui = dashboardPage(
       title = "Promedios Municipales",
@@ -65,7 +67,7 @@ ui = dashboardPage(
                                               font-size: 14px;
                                               font-style: bold;}"))),
       
-      body = dashboardBody(tabBox(width = 660,
+      body = dashboardBody(tabBox(width = 960,
                       tabPanel("Municipios",
                         fluidRow(       
                            box(title = textOutput("edo_tit1"),
@@ -73,7 +75,7 @@ ui = dashboardPage(
                                        width = 12, 
                                        height = 590,
                                        leafletOutput(outputId = "map",
-                                                     width = 530, 
+                                                     width = 730, 
                                                      height = 530)))),
                       tabPanel("Raster",
                         fluidRow(
@@ -82,7 +84,7 @@ ui = dashboardPage(
                                        width = 12, 
                                        height = 590,
                                        leafletOutput(outputId = "map_r",
-                                                     width = 530, 
+                                                     width = 730, 
                                                      height = 530)))))))
 
 server = function(input, output, session) {
@@ -105,11 +107,15 @@ server = function(input, output, session) {
                   opacity = 1,
                   stroke = TRUE,
                   smoothFactor = 0.03)
-      })
+    })
   
   output$map_r <- renderLeaflet({
     leaflet() |> 
-    addRasterImage(mapa_r(), colors = cal)})  
+    addRasterImage(mapa_r(), colors = cal) |> 
+    addLegend(position = "topright",
+                pal = cal, values = values(mapa_r()),
+                opacity = 1)
+    })  
   
   output$iie_h <- renderPlot({
     ggplot(tibble(x = values(mapa_r(), na.rm = T)), 
@@ -145,20 +151,20 @@ server = function(input, output, session) {
   mapa_r <- reactive({
               mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
                                                    edos_lista$edo)][1])})
-  cuantiles <- reactive ({quantile(values(mapa_r(),
-                                          na.rm = T),
-                                   c(0.333, 0.667),
-                                   na.rm=TRUE)})
+  #cuantiles <- reactive ({quantile(values(mapa_r(),
+  #                                        na.rm = T),
+  #                                 c(0.333, 0.667),
+  #                                 na.rm=TRUE)})
   
   vals_ini <- reactive({
-      valores <- tibble(valores = cuantiles())
+      valores <- tibble(valores = cuantiles_iie)
      })
   
   valores <- reactive({
                if(length(input$map_shape_click) == 0) return(vals_ini())
                  else {
                    iie <- mapa()$IIE_2018_mean[mapa()$id ==input$map_shape_click$id]
-                   valores <- tibble(valores = c(cuantiles(), iie))
+                   valores <- tibble(valores = c(cuantiles_iie, iie))
                  } 
               })
   
@@ -177,11 +183,16 @@ server = function(input, output, session) {
                 return(tipo_ini())
               else c("dotted", "dashed", "solid")})
 
-  reactive({
-    print(valores())
-    print(colores())
-    print((tipo_l()))
-  })
+  output$muni <- reactive({
+                        iie_2018 <- datos_edos$`iie.2018_mean`[
+                                                grepl(input$estado, 
+                                                datos_edos$NOMGEO)] 
+                        iie_2018 <- format(iie_2018, digits = 2, nsmall = 1)
+                        output$muni <- renderText(paste0("Estado:\n  ", 
+                                                         input$estado,
+                                                         "\nIIE-2018: ", 
+                                                         iie_2018, " %"))
+                       })
   
   #click on polygon
   observeEvent(input$map_shape_click, {

@@ -5,7 +5,7 @@ account: miequiz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 12920648
-bundleId: 9209832
+bundleId: 9219267
 url: https://miequiz.shinyapps.io/dash-iie-mex/
 version: 1
 asMultiple: FALSE
