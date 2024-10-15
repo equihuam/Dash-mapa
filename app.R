@@ -45,48 +45,46 @@ datos_edos <- read.csv("datos_edos.txt")
 ui = bs4DashPage(
       title = "Promedios Municipales",
       header = bs4DashNavbar (title = "Integridad Ecosistémica",
-                               titleWidth = 280),
+                               titleWidth = "22%"),
       
-      sidebar = bs4DashSidebar(collapsed = FALSE, width = 280, 
-                        selectInput(inputId = "estado", 
-                                    "Elige la entidad", 
-                                    choices = edos_lista$edo,
-                                    selected = "Aguascalientes"),
+      sidebar = bs4DashSidebar(collapsed = FALSE, 
+                               width = "22%",
+                     selectInput(inputId = "estado", 
+                                 "Elige la entidad", 
+                                 choices = edos_lista$edo,
+                                 selected = "Aguascalientes"),
+                     bs4Accordion(id = "acordeon_1",
+                        bs4AccordionItem(title = "Rango IIE",
                         sliderInput(inputId = "iie_min",
                                     "Límite mínimo:",
                                     0, 100, value = 0),
                         sliderInput(inputId = "iie_max",
                                     "Límite máximo:",
-                                    0, 100, value = 100),
+                                    0, 100, value = 100))),
                         box(title = "Lugar", width = 12,
                             verbatimTextOutput("muni")),
                         box(width = 12, height = 170, 
                             plotOutput("iie_h", width = 200, 
-                                       height = 150)),
-                      
-                        tags$head(tags$style("#muni{color: blue;
-                                              font-size: 14px;
-                                              font-style: bold;}"))),
+                                       height = 150))),
       
-      body = bs4DashBody(tabBox(width = 12,
-                      tabPanel("Municipios",
-                        fluidRow(       
-                           box(title = textOutput("edo_tit1"),
+      body = bs4DashBody(
+                      tabsetPanel(
+                        tabItem("Municipios",
+                                title = textOutput("edo_tit1"),
                                        solidHeader = TRUE,
                                        width = 12, 
                                        height = 590,
                                        leafletOutput(outputId = "map",
-                                                     width = 730, 
-                                                     height = 530)))),
-                      tabPanel("Raster",
-                        fluidRow(
-                           box(title = textOutput("edo_tit2"),
-                                       solidHeader = TRUE,
-                                       width = 12, 
-                                       height = 590,
-                                       leafletOutput(outputId = "map_r",
-                                                     width = 730, 
-                                                     height = 530)))))))
+                                                     width = 830, 
+                                                     height = 530)),
+                        tabItem("Raster",
+                                title = textOutput("edo_tit2"),
+                                         solidHeader = TRUE,
+                                         width = 12, 
+                                         height = 590,
+                                         leafletOutput(outputId = "map_r",
+                                                       width = 730, 
+                                                       height = 530)))))
 
 server = function(input, output, session) {
   output$map <-  renderLeaflet({
