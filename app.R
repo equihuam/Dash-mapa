@@ -196,6 +196,7 @@ server = function(input, output, session) {
   
   #click on polygon
   observeEvent(input$map_shape_click, {
+    print(input$map_shape_click)
     map_click <- input$map_shape_click
     municipio <- mapa()$NOMGEO[mapa()$id == map_click$id]
     iie_2018 <- format(mapa()$IIE_2018_mean[mapa()$id == map_click$id], 
