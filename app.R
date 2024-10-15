@@ -6,9 +6,10 @@ library(tidyterra)
 library(ggplot2)
 library(sys)
 library(bs4Dash)
-library(shinydashboardPlus)
-library(shinydashboard)
+#library(shinydashboardPlus)
+#library(shinydashboard)
 library(dplyr)
+library(fresh)
 
 #dir_base <- ifelse (grepl("MONSTRUO", Sys.getenv()["USERDOMAIN"]),
 #                    "D:/1 Nubes/El Instituto de Ecología/Proyecto Integralidad Gamma - Documentos/", 
@@ -41,12 +42,12 @@ edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x)
 cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.txt"))
 datos_edos <- read.csv("datos_edos.txt")
 
-ui = dashboardPage(
+ui = bs4DashPage(
       title = "Promedios Municipales",
-      header = dashboardHeader(title = "Integridad Ecosistémica",
+      header = bs4DashNavbar (title = "Integridad Ecosistémica",
                                titleWidth = 280),
       
-      sidebar = dashboardSidebar(collapsed = FALSE, width = 280, 
+      sidebar = bs4DashSidebar(collapsed = FALSE, width = 280, 
                         selectInput(inputId = "estado", 
                                     "Elige la entidad", 
                                     choices = edos_lista$edo,
@@ -67,7 +68,7 @@ ui = dashboardPage(
                                               font-size: 14px;
                                               font-style: bold;}"))),
       
-      body = dashboardBody(tabBox(width = 960,
+      body = bs4DashBody(tabBox(width = 12,
                       tabPanel("Municipios",
                         fluidRow(       
                            box(title = textOutput("edo_tit1"),
