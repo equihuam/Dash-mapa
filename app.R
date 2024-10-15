@@ -58,20 +58,23 @@ tema <- bs4Dash_theme(
     "white" = "#E5E9F0",
     "info-box-bg" = "#4C566A",  # bs4InfoBox() background
     dark = "#272c30", #  bs4DashNavbar(status = "dark") background,
-    "gray-600" = "#FFF"
+    "gray-600" = "#FFF",
+    "brand-link" = "grey80"
   )
-
-bs4dash_sidebar_light(color = "white")
 
 ui = bs4DashPage(
       title = "Índice de Integridad Ecosistémica - Promedios Municipales",
       header = bs4DashNavbar (title = "Integridad Ecosistémica",
-                              titleWidth = "22%",
-                              fixed = TRUE),
+                              titleWidth = "21%",
+                              border = TRUE,
+                              fixed = TRUE,
+                              tags$style(
+                                type = 'text/css', 
+                                '.brand-link {color: white!important; }'
+                              )),
       
       sidebar = bs4DashSidebar(minified = FALSE,
                      collapsed = FALSE, 
-                     width = "14%",
                      selectInput(inputId = "estado", 
                                  "Elige la entidad", 
                                  choices = edos_lista$edo,
@@ -86,30 +89,23 @@ ui = bs4DashPage(
                                     0, 100, value = 100))),
                         box(title = "Lugar", width = 12,
                             verbatimTextOutput("muni"),
-                        plotOutput("iie_h", width = 180, 
+                        plotOutput("iie_h", 
                                        height = 135))),
       
       body = bs4DashBody(use_theme(tema),
                          bs4Card(title = textOutput("edo_tit0"),
-                                 width = 6,
-                                 boxToolSize = "md",
+                                 boxToolSize = "lg",
                       tabsetPanel(
                         tabItem("Municipios",
                                 title =  "Vectores",    # textOutput("edo_tit1"),
                                         solidHeader = TRUE,
-                                        width = 10, 
-                                        height = 590,
-                                        leafletOutput(outputId = "map",
-                                                      width = 730, 
-                                                      height = 530)),
+                                        height = 800,
+                                        leafletOutput(outputId = "map")),
                           tabItem("Raster",
                                 title = "Raster",      # textOutput("edo_tit2"),
                                          solidHeader = TRUE,
-                                         width = 12, 
-                                         height = 590,
-                                         leafletOutput(outputId = "map_r",
-                                                       width = 730, 
-                                                       height = 530))))))
+                                         height = 800,
+                                         leafletOutput(outputId = "map_r"))))))
 
 server = function(input, output, session) {
   output$map <-  renderLeaflet({
