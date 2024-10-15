@@ -141,7 +141,8 @@ server = function(input, output, session) {
   
   mapa <- reactive({
             mapa <- st_read(edos_lista$vect[grepl(input$estado, 
-                                         edos_lista$edo)][1]) 
+                                         edos_lista$edo)][1], 
+                            quiet = TRUE) 
             mapa <- mapa |> 
               st_transform(WGS84) |> 
               mutate(IIE_2018_mean = IIE_2018_mean * 100,
