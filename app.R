@@ -42,6 +42,25 @@ edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x)
 cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.txt"))
 datos_edos <- read.csv("datos_edos.txt")
 
+tema <- create_theme(bs4dash_yiq(
+                    contrasted_threshold = 150,
+                    text_dark = "#007bff", # blue
+                    text_light = "#dc3545" # red
+                  ),
+                  bs4dash_sidebar_light(
+                    bg = "#272c30",
+                    color = "#bec5cb",
+                    hover_color = "#FFF",
+                    submenu_bg = "#272c30", 
+                    submenu_color = "#FFF",
+                    submenu_hover_color = "#FFF"
+                  ),
+                  bs4dash_vars(
+  navbar_light_color = "#bec5cb",
+  navbar_light_active_color = "#FFF",
+  navbar_light_hover_color = "#FFF"
+))
+
 ui = bs4DashPage(
       title = "Promedios Municipales",
       header = bs4DashNavbar (title = "Integridad Ecosistémica",
@@ -68,6 +87,7 @@ ui = bs4DashPage(
                                        height = 150))),
       
       body = bs4DashBody(
+                      use_theme(tema),  
                       tabsetPanel(
                         tabItem("Municipios",
                                 title = textOutput("edo_tit1"),
