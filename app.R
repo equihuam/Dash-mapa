@@ -42,13 +42,36 @@ edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x)
 cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.txt"))
 datos_edos <- read.csv("datos_edos.txt")
 
+#as_tibble(search_vars_bs4dash("navbar"))
+
+# Tema
+tema <- bs4Dash_theme(
+    primary = "lightblue",
+    secondary = "#B48EAD",
+    success = "#A3BE8C",
+    danger = "#BF616A",
+    "sidebar-light-bg" = "#3B4252",
+    "sidebar-light-color" = "white",
+    "main-bg" = "lightyellow",
+    "body-color" = "#ECEFF4",
+    "card-bg" = "#4C566A", # bs4Card() background
+    "white" = "#E5E9F0",
+    "info-box-bg" = "#4C566A",  # bs4InfoBox() background
+    dark = "#272c30", #  bs4DashNavbar(status = "dark") background,
+    "gray-600" = "#FFF"
+  )
+
+bs4dash_sidebar_light(color = "white")
+
 ui = bs4DashPage(
-      title = "Promedios Municipales",
+      title = "Índice de Integridad Ecosistémica - Promedios Municipales",
       header = bs4DashNavbar (title = "Integridad Ecosistémica",
-                               titleWidth = "22%"),
+                              titleWidth = "22%",
+                              fixed = TRUE),
       
-      sidebar = bs4DashSidebar(collapsed = FALSE, 
-                               width = "22%",
+      sidebar = bs4DashSidebar(minified = FALSE,
+                     collapsed = FALSE, 
+                     width = "14%",
                      selectInput(inputId = "estado", 
                                  "Elige la entidad", 
                                  choices = edos_lista$edo,
@@ -62,29 +85,31 @@ ui = bs4DashPage(
                                     "Límite máximo:",
                                     0, 100, value = 100))),
                         box(title = "Lugar", width = 12,
-                            verbatimTextOutput("muni")),
-                        box(width = 12, height = 170, 
-                            plotOutput("iie_h", width = 200, 
-                                       height = 150))),
+                            verbatimTextOutput("muni"),
+                        plotOutput("iie_h", width = 180, 
+                                       height = 135))),
       
-      body = bs4DashBody(
+      body = bs4DashBody(use_theme(tema),
+                         bs4Card(title = textOutput("edo_tit0"),
+                                 width = 6,
+                                 boxToolSize = "md",
                       tabsetPanel(
                         tabItem("Municipios",
-                                title = textOutput("edo_tit1"),
+                                title =  "Vectores",    # textOutput("edo_tit1"),
                                         solidHeader = TRUE,
-                                        width = 12, 
+                                        width = 10, 
                                         height = 590,
                                         leafletOutput(outputId = "map",
-                                                      width = 830, 
+                                                      width = 730, 
                                                       height = 530)),
                           tabItem("Raster",
-                                title = textOutput("edo_tit2"),
+                                title = "Raster",      # textOutput("edo_tit2"),
                                          solidHeader = TRUE,
                                          width = 12, 
                                          height = 590,
                                          leafletOutput(outputId = "map_r",
                                                        width = 730, 
-                                                       height = 530)))))
+                                                       height = 530))))))
 
 server = function(input, output, session) {
   output$map <-  renderLeaflet({
@@ -135,8 +160,9 @@ server = function(input, output, session) {
     }) 
 
   # Cambio de mapa
-  output$edo_tit1 <- renderText({input$estado})
-  output$edo_tit2 <- renderText({input$estado})
+  output$edo_tit0 <- renderText({input$estado})
+#  output$edo_tit1 <- renderText({input$estado})
+#  output$edo_tit2 <- renderText({input$estado})
   
   mapa <- reactive({
             mapa <- st_read(edos_lista$vect[grepl(input$estado, 
