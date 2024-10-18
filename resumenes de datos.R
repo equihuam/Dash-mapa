@@ -1,5 +1,5 @@
-mapa_iie_r_f <- "C:/Users/equih/1 Nubes/OneDrive - El Instituto de Ecología/Documentos - Proyecto Integralidad Gamma/03 Documentos en preparación/02 Libro UNAM/mapas/Mex-IIE-ZVH-Albers/Capas/IIE-2018-INEGI-SEEA.tif"
-mapa_iie_v_f <- "C:/Users/equih/1 Nubes/OneDrive - El Instituto de Ecología/Documentos - Proyecto Integralidad Gamma/03 Documentos en preparación/02 Libro UNAM/mapas/Mex-IIE-ZVH-Albers/Capas/IIE-2018-Estados-Albers.gpkg"
+### mapa_iie_r_f <- "C:/Users/equih/1 Nubes/OneDrive - El Instituto de Ecología/Documentos - Proyecto Integralidad Gamma/03 Documentos en preparación/02 Libro UNAM/mapas/Mex-IIE-ZVH-Albers/Capas/IIE-2018-INEGI-SEEA.tif"
+### mapa_iie_v_f <- "C:/Users/equih/1 Nubes/OneDrive - El Instituto de Ecología/Documentos - Proyecto Integralidad Gamma/03 Documentos en preparación/02 Libro UNAM/mapas/Mex-IIE-ZVH-Albers/Capas/IIE-2018-Estados-Albers.gpkg"
 
 mapa_iie_r <- rast(mapa_iie_r_f)
 hist(values(mapa_iie_r),freq = FALSE )

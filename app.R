@@ -90,13 +90,13 @@ ui = bs4DashPage(
       body = bs4DashBody(use_theme(tema),
                          bs4Card(title = textOutput("edo_tit0"),
                                  boxToolSize = "sm",
-                                 width = 8,
+                                 width = 9,
                                  height = 600,
                       tabsetPanel(
                         tabItem("municipios",
                                 title =  "Vectores",    # textOutput("edo_tit1"),
                                 solidHeader = TRUE,
-                                leafletOutput(outputId = "map",
+                                leafletOutput(outputId = "map_v",
                                               width = 760,
                                               height = 520)),
                           tabItem("pixeles",
@@ -108,7 +108,7 @@ ui = bs4DashPage(
                         ))))
 
 server = function(input, output, session) {
-  output$map <-  renderLeaflet({
+  output$map_v <-  renderLeaflet({
       mapa() |> 
       filter((IIE_2018_mean <= input$iie_max) &
              (IIE_2018_mean > input$iie_min)) |> 
@@ -221,9 +221,9 @@ server = function(input, output, session) {
   
   #click on polygon
   
-  observeEvent(input$map_shape_click, {
+  observeEvent(input$map_v_shape_click, {
     colores(c("red", "red", "blue"))
-    map_click <- input$map_shape_click
+    map_click <- input$map_v_shape_click
     municipio <- mapa()$NOMGEO[mapa()$id == map_click$id]
     iie_2018 <- format(mapa()$IIE_2018_mean[mapa()$id == map_click$id], 
                        digits = 2, nsmall = 1)
