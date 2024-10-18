@@ -46,15 +46,14 @@ tema <- bs4Dash_theme(
     success = "#A3BE8C",
     danger = "#BF616A",
     "sidebar-light-bg" = "#3B4252",
-    "sidebar-light-color" = "white",
+    "sidebar-light-color" = "#FFF",
     "main-bg" = "lightyellow",
     "body-color" = "#ECEFF4",
     "card-bg" = "#4C566A", # bs4Card() background
-    "white" = "#E5E9F0",
+    "white" = "#79886A",
     "info-box-bg" = "#4C566A",  # bs4InfoBox() background
     dark = "#272c30", #  bs4DashNavbar(status = "dark") background,
     "gray-600" = "#FFF",
-    "brand-link" = "grey80",
     "gray-900" = "#FFF",
     "navbar_light_color" = "#FFF"
   )
@@ -68,7 +67,9 @@ ui = bs4DashPage(
                               fixed = TRUE,
                               tags$style(
                                 type = 'text/css', 
-                                '.brand-link {color: white!important; }
+                                '.brand-link {color: white!important;}
+                                 .nav-link {color: white!important;}
+                                 pre {background-color: white!important;}
                                  .navbar-white {background-color: #3B4252; }',
                               )),
       
@@ -100,7 +101,7 @@ ui = bs4DashPage(
       
       body = bs4DashBody(
         use_theme(tema),
-        bs4Card(
+          bs4Card(
           title = textOutput("edo_tit0"),
                                  boxToolSize = "sm",
                                  width = 9,
@@ -122,7 +123,11 @@ ui = bs4DashPage(
                 outputId = "map_r",
                 width = 760,
                 height = 520))
-            ))))
+            )),
+        bs4TabItems(
+          bs4TabItem(tabName = "Leyyenddda",
+            bs4Card(title = "Leyenda")))
+        ))
 
 server = function(input, output, session) {
   output$map_v <-  renderLeaflet({
