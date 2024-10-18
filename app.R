@@ -157,6 +157,7 @@ server = function(input, output, session) {
 #  output$edo_tit2 <- renderText({input$estado})
   
   mapa <- reactive({
+            colores(c("red", "red", "darkgreen"))
             mapa <- st_read(edos_lista$vect[grepl(input$estado, 
                                          edos_lista$edo)][1], 
                             quiet = TRUE) 
@@ -169,20 +170,15 @@ server = function(input, output, session) {
   mapa_r <- reactive({
               mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
                                                    edos_lista$edo)][1])})
-  #cuantiles <- reactive ({quantile(values(mapa_r(),
-  #                                        na.rm = T),
-  #                                 c(0.333, 0.667),
-  #                                 na.rm=TRUE)})
-  
+
   iie_2018_ini <- reactive({
     iie_2018 <- datos_edos |> 
       filter(input$estado == str_replace_all(NOMGEO, " ", "_")) |> 
       mutate(iie = format(iie.2018_mean, digits = 2, 
                           nsmall = 1), .keep = "used")
-    return(iie_2018)
   })
-  
-  vals_ini <- reactive({
+
+  vals_ini <- eventReactive(input$estado, {
       tibble(cotas_iie = c(cuantiles_iie, iie_2018_ini()$`iie.2018_mean`))
      })
   
@@ -194,45 +190,36 @@ server = function(input, output, session) {
        } 
     })
   
-  reactive(
-    print(valores())
-  )
-  
-  color_ini <- reactive(colores <- c("red", "red", "darkgreen"))
 
-  colores <- reactive({ 
-                if (is.null(input$map_shape_click) > 0) 
-                  c("red", "red", "blue")
-                else return(color_ini())
-                })
+  color_ini <- reactiveVal()
   
-  tipo_ini <- reactive(c("dotted", "dashed", "solid"))
+  colores <- reactiveVal(c("red", "red", "darkgreen"))
   
-  tipo_l <- reactive({
-              if(is.null(input$map_shape_click) == 0) 
-                return(tipo_ini())
+  tipo_l <- eventReactive(input$estado, {
+              if(is.null(input$map_shape_click)) 
+                return(c("dotted", "dashed", "solid"))
               else c("dotted", "dashed", "solid")})
 
-#  output$muni <- reactive({
-#    renderText(paste0("Estado:\n  ",
-#                      input$estado,
-#                      "\nIIE-2018: ", 
-#                      iie_2018_ini()$iie, " %"))
-#   })
-
-  output$muni <- reactive({
-    renderText("Estado\n")
-  })
-    
+  observeEvent(input$estado, {
+   output$muni <- renderText(paste0("Estado:\n  ",
+                             input$estado,
+                             "\nIIE-2018: ",
+                             iie_2018_ini()$iie, " %"))
+                    })
+  
   #click on polygon
+  
   observeEvent(input$map_shape_click, {
+    colores(c("red", "red", "blue"))
     map_click <- input$map_shape_click
     municipio <- mapa()$NOMGEO[mapa()$id == map_click$id]
     iie_2018 <- format(mapa()$IIE_2018_mean[mapa()$id == map_click$id], 
                        digits = 2, nsmall = 1)
     output$muni <- renderText(paste0("Municipio:\n  ", municipio,
                                      "\nIIE-2018: ", iie_2018, " %"))
+    return("municipio")
   }) 
+  
 }
 
 shinyApp(ui, server)
