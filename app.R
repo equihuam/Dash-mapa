@@ -54,8 +54,11 @@ tema <- bs4Dash_theme(
     "info-box-bg" = "#4C566A",  # bs4InfoBox() background
     dark = "#272c30", #  bs4DashNavbar(status = "dark") background,
     "gray-600" = "#FFF",
-    "brand-link" = "grey80"
+    "brand-link" = "grey80",
+    "gray-900" = "#FFF",
+    "navbar_light_color" = "#FFF"
   )
+
 
 ui = bs4DashPage(
       title = "Índice de Integridad Ecosistémica - Promedios Municipales",
@@ -65,11 +68,12 @@ ui = bs4DashPage(
                               fixed = TRUE,
                               tags$style(
                                 type = 'text/css', 
-                                '.brand-link {color: white!important; }'
+                                '.brand-link {color: white!important; }
+                                 .navbar-white {background-color: #3B4252; }',
                               )),
       
       sidebar = bs4DashSidebar(minified = FALSE,
-                     collapsed = FALSE, 
+                     collapsed = FALSE,
                      selectInput(inputId = "estado", 
                                  "Elige la entidad", 
                                  choices = edos_lista$edo,
