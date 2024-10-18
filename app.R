@@ -89,18 +89,23 @@ ui = bs4DashPage(
       
       body = bs4DashBody(use_theme(tema),
                          bs4Card(title = textOutput("edo_tit0"),
-                                 boxToolSize = "lg",
+                                 boxToolSize = "sm",
+                                 width = 8,
+                                 height = 600,
                       tabsetPanel(
-                        tabItem("Municipios",
+                        tabItem("municipios",
                                 title =  "Vectores",    # textOutput("edo_tit1"),
-                                        solidHeader = TRUE,
-                                        height = 800,
-                                        leafletOutput(outputId = "map")),
-                          tabItem("Raster",
-                                title = "Raster",      # textOutput("edo_tit2"),
-                                         solidHeader = TRUE,
-                                         height = 800,
-                                         leafletOutput(outputId = "map_r"))))))
+                                solidHeader = TRUE,
+                                leafletOutput(outputId = "map",
+                                              width = 760,
+                                              height = 520)),
+                          tabItem("pixeles",
+                                title = "pixeles",      # textOutput("edo_tit2"),
+                                solidHeader = TRUE,
+                                leafletOutput(outputId = "map_r",
+                                              width = 760,
+                                              height = 520))
+                        ))))
 
 server = function(input, output, session) {
   output$map <-  renderLeaflet({
@@ -125,10 +130,17 @@ server = function(input, output, session) {
     })
   
   output$map_r <- renderLeaflet({
+    pixeles <- mapa_r()
+    names(pixeles) <- "iie"
+    pixeles <- pixeles |> 
+      mutate(iie = if_else((iie <= input$iie_max) &
+                           (iie >= input$iie_min), iie, NA), 
+             .keep = "none")
+    
     leaflet() |> 
-    addRasterImage(mapa_r(), colors = cal) |> 
+    addRasterImage(pixeles, colors = cal) |> 
     addLegend(position = "topright",
-                pal = cal, values = values(mapa_r()),
+                pal = cal, values = values(pixeles),
                 opacity = 1,
               )
     })  
@@ -157,19 +169,19 @@ server = function(input, output, session) {
 #  output$edo_tit2 <- renderText({input$estado})
   
   mapa <- reactive({
-            colores(c("red", "red", "darkgreen"))
-            mapa <- st_read(edos_lista$vect[grepl(input$estado, 
-                                         edos_lista$edo)][1], 
-                            quiet = TRUE) 
-            mapa <- mapa |> 
-              st_transform(WGS84) |> 
-              mutate(IIE_2018_mean = IIE_2018_mean * 100,
-                     id = 1:n()) |> 
-              st_simplify(preserveTopology = TRUE, dTolerance = 100)})
+    colores(c("red", "red", "darkgreen"))
+    mapa <- st_read(edos_lista$vect[grepl(input$estado, 
+                                 edos_lista$edo)][1], 
+                    quiet = TRUE) |> 
+      st_transform(WGS84) |> 
+      mutate(IIE_2018_mean = IIE_2018_mean * 100,
+             id = 1:n()) |> 
+      st_simplify(preserveTopology = TRUE, dTolerance = 100)})
             
   mapa_r <- reactive({
-              mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
-                                                   edos_lista$edo)][1])})
+    mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
+                                               edos_lista$edo)][1])
+  })
 
   iie_2018_ini <- reactive({
     iie_2018 <- datos_edos |> 
