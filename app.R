@@ -6,16 +6,9 @@ library(tidyterra)
 library(ggplot2)
 library(sys)
 library(bs4Dash)
-#library(shinydashboardPlus)
-#library(shinydashboard)
 library(dplyr)
 library(fresh)
-
-#dir_base <- ifelse (grepl("MONSTRUO", Sys.getenv()["USERDOMAIN"]),
-#                    "D:/1 Nubes/El Instituto de Ecología/Proyecto Integralidad Gamma - Documentos/", 
-#                    "C:/Users/equih/1 Nubes/OneDrive - El Instituto de Ecología/Documentos - Proyecto Integralidad Gamma/")
-#dir_shp <- paste0(dir_base, "03 Documentos en preparación/02 Libro UNAM/mapas/")
-#"Mex-IIE-ZVH-Albers/Capas"
+library(stringr)
 
 mapas_iie_muni_r <- list.files("./Estados/",
                         full.names = TRUE, 
@@ -40,7 +33,9 @@ edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x)
               arrange(edo)
 
 cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.txt"))
-datos_edos <- read.csv("datos_edos.txt")
+datos_edos <- read.csv("datos_edos.txt", header = TRUE) |> 
+              mutate(NOMGEO = if_else(NOMGEO == "México",
+                                      "Estado de México", NOMGEO))
 
 #as_tibble(search_vars_bs4dash("navbar"))
 
@@ -134,7 +129,8 @@ server = function(input, output, session) {
     addRasterImage(mapa_r(), colors = cal) |> 
     addLegend(position = "topright",
                 pal = cal, values = values(mapa_r()),
-                opacity = 1)
+                opacity = 1,
+              )
     })  
   
   output$iie_h <- renderPlot({
@@ -149,7 +145,7 @@ server = function(input, output, session) {
       xlab(label = "Condición ecosistémica") +
       scale_fill_brewer(palette = "RdYlGn") + 
       geom_vline(data = tibble(valores()), 
-                 aes(xintercept = valores),
+                 aes(xintercept = cotas_iie),
                  color = colores(), 
                  linewidth = 0.5, 
                  linetype = tipo_l())
@@ -178,44 +174,56 @@ server = function(input, output, session) {
   #                                 c(0.333, 0.667),
   #                                 na.rm=TRUE)})
   
+  iie_2018_ini <- reactive({
+    iie_2018 <- datos_edos |> 
+      filter(input$estado == str_replace_all(NOMGEO, " ", "_")) |> 
+      mutate(iie = format(iie.2018_mean, digits = 2, 
+                          nsmall = 1), .keep = "used")
+    return(iie_2018)
+  })
+  
   vals_ini <- reactive({
-      valores <- tibble(valores = cuantiles_iie)
+      tibble(cotas_iie = c(cuantiles_iie, iie_2018_ini()$`iie.2018_mean`))
      })
   
   valores <- reactive({
-               if(length(input$map_shape_click) == 0) return(vals_ini())
-                 else {
-                   iie <- mapa()$IIE_2018_mean[mapa()$id ==input$map_shape_click$id]
-                   valores <- tibble(valores = c(cuantiles_iie, iie))
-                 } 
-              })
+    if(is.null(input$map_shape_click)) return(vals_ini())
+       else {
+         iie <- mapa()$IIE_2018_mean[mapa()$id ==input$map_shape_click$id]
+         return(tibble(cotas_iie = c(cuantiles_iie, iie)))
+       } 
+    })
   
-  color_ini <- reactive(colores <- c("red", "red"))
+  reactive(
+    print(valores())
+  )
+  
+  color_ini <- reactive(colores <- c("red", "red", "darkgreen"))
 
   colores <- reactive({ 
-                if (length(input$map_shape_click) > 0) 
+                if (is.null(input$map_shape_click) > 0) 
                   c("red", "red", "blue")
                 else return(color_ini())
                 })
   
-  tipo_ini <- reactive(c("dotted", "dashed"))
+  tipo_ini <- reactive(c("dotted", "dashed", "solid"))
   
   tipo_l <- reactive({
-              if(length(input$map_shape_click) == 0) 
+              if(is.null(input$map_shape_click) == 0) 
                 return(tipo_ini())
               else c("dotted", "dashed", "solid")})
 
+#  output$muni <- reactive({
+#    renderText(paste0("Estado:\n  ",
+#                      input$estado,
+#                      "\nIIE-2018: ", 
+#                      iie_2018_ini()$iie, " %"))
+#   })
+
   output$muni <- reactive({
-                        iie_2018 <- datos_edos$`iie.2018_mean`[
-                                                grepl(input$estado, 
-                                                datos_edos$NOMGEO)] 
-                        iie_2018 <- format(iie_2018, digits = 2, nsmall = 1)
-                        output$muni <- renderText(paste0("Estado:\n  ", 
-                                                         input$estado,
-                                                         "\nIIE-2018: ", 
-                                                         iie_2018, " %"))
-                       })
-  
+    renderText("Estado\n")
+  })
+    
   #click on polygon
   observeEvent(input$map_shape_click, {
     map_click <- input$map_shape_click
@@ -225,7 +233,6 @@ server = function(input, output, session) {
     output$muni <- renderText(paste0("Municipio:\n  ", municipio,
                                      "\nIIE-2018: ", iie_2018, " %"))
   }) 
-  
 }
 
 shinyApp(ui, server)
