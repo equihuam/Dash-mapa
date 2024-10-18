@@ -72,44 +72,57 @@ ui = bs4DashPage(
                                  .navbar-white {background-color: #3B4252; }',
                               )),
       
-      sidebar = bs4DashSidebar(minified = FALSE,
-                     collapsed = FALSE,
-                     selectInput(inputId = "estado", 
-                                 "Elige la entidad", 
-                                 choices = edos_lista$edo,
-                                 selected = "Aguascalientes"),
-                     bs4Accordion(id = "acordeon_1",
-                        bs4AccordionItem(title = "Rango IIE",
-                        sliderInput(inputId = "iie_min",
-                                    "Límite mínimo:",
-                                    0, 100, value = 0),
-                        sliderInput(inputId = "iie_max",
-                                    "Límite máximo:",
-                                    0, 100, value = 100))),
-                        box(title = "Lugar", width = 12,
-                            verbatimTextOutput("muni"),
-                        plotOutput("iie_h", 
-                                       height = 135))),
+      sidebar = bs4DashSidebar(
+        minified = FALSE,
+        collapsed = FALSE,
+        selectInput(
+          inputId = "estado",
+          "Elige la entidad",
+          choices = edos_lista$edo,
+          selected = "Aguascalientes"),
+        bs4Accordion(
+          id = "acordeon_1",
+          bs4AccordionItem(
+            title = "Rango IIE",
+            sliderInput(
+              inputId = "iie_min",
+              "Límite mínimo:",0, 100, value = 0),
+            sliderInput(
+              inputId = "iie_max",
+              "Límite máximo:",
+              0, 100, value = 100))),
+        box(
+          title = "Lugar", width = 12,
+          verbatimTextOutput("muni"),
+          plotOutput(
+            "iie_h",
+            height = 135))),
       
-      body = bs4DashBody(use_theme(tema),
-                         bs4Card(title = textOutput("edo_tit0"),
+      body = bs4DashBody(
+        use_theme(tema),
+        bs4Card(
+          title = textOutput("edo_tit0"),
                                  boxToolSize = "sm",
                                  width = 9,
                                  height = 600,
-                      tabsetPanel(
-                        tabItem("municipios",
-                                title =  "Vectores",    # textOutput("edo_tit1"),
-                                solidHeader = TRUE,
-                                leafletOutput(outputId = "map_v",
-                                              width = 760,
-                                              height = 520)),
-                          tabItem("pixeles",
-                                title = "pixeles",      # textOutput("edo_tit2"),
-                                solidHeader = TRUE,
-                                leafletOutput(outputId = "map_r",
-                                              width = 760,
-                                              height = 520))
-                        ))))
+          tabsetPanel(
+            tabItem(
+              "municipios",
+              title =  "Vectores",    # textOutput("edo_tit1"),
+              solidHeader = TRUE,
+              leafletOutput(
+                outputId = "map_v",
+                width = 760,
+                height = 520)),
+            tabItem(
+              "pixeles",
+              title = "pixeles",      # textOutput("edo_tit2"),
+              solidHeader = TRUE,
+              leafletOutput(
+                outputId = "map_r",
+                width = 760,
+                height = 520))
+            ))))
 
 server = function(input, output, session) {
   output$map_v <-  renderLeaflet({
