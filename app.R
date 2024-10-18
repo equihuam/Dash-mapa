@@ -58,7 +58,7 @@ tema <- bs4Dash_theme(
     "gray-900" = "#FFF",
     "navbar_light_color" = "#FFF"
   )
-
+#
 
 ui = bs4DashPage(
       title = "Índice de Integridad Ecosistémica - Promedios Municipales",
@@ -143,6 +143,15 @@ server = function(input, output, session) {
     
     leaflet() |> 
     addRasterImage(pixeles, colors = cal) |> 
+    addPolygons(data = mapa(),
+                  fillOpacity = 0,
+                  weight = 0.5,
+                  color = "darkblue",
+                  # popup = ~ NOMGEO,
+                  layerId = ~ id,
+                  opacity = 1,
+                  stroke = TRUE,
+                  smoothFactor = 0.03) |>  
     addLegend(position = "topright",
                 pal = cal, values = values(pixeles),
                 opacity = 1,
@@ -235,7 +244,19 @@ server = function(input, output, session) {
                                      "\nIIE-2018: ", iie_2018, " %"))
     return("municipio")
   }) 
+
+  observeEvent(input$map_r_shape_click, {
+    colores(c("red", "red", "blue"))
+    map_click <- input$map_r_shape_click
+    municipio <- mapa()$NOMGEO[mapa()$id == map_click$id]
+    iie_2018 <- format(mapa()$IIE_2018_mean[mapa()$id == map_click$id], 
+                       digits = 2, nsmall = 1)
+    output$muni <- renderText(paste0("Municipio:\n  ", municipio,
+                                     "\nIIE-2018: ", iie_2018, " %"))
+    return("municipio")
+  }) 
   
+    
 }
 
 shinyApp(ui, server)
