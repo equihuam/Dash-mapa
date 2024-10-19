@@ -18,7 +18,7 @@ mapas_iie_muni_v <- list.files("./Estados/",
                                pattern = ".gpkg$",
                                full.names = TRUE)
 
-bins<-c(0,12.5,25,37.5,50, 62.5,75,87.5, 100,Inf)
+bins<-c(0,12.5,25,37.5,50, 62.5,75,87.5, 95, 100)
 cal <- colorBin(palette="RdYlGn", 
                 domain = c(0, 100), 
                 bins=bins,
@@ -50,7 +50,7 @@ tema <- bs4Dash_theme(
     "main-bg" = "lightyellow",
     "body-color" = "#ECEFF4",
     "card-bg" = "#4C566A", # bs4Card() background
-    "white" = "#79886A",
+    "white" = "#234364",
     "info-box-bg" = "#4C566A",  # bs4InfoBox() background
     dark = "#272c30", #  bs4DashNavbar(status = "dark") background,
     "gray-600" = "#FFF",
@@ -99,6 +99,22 @@ ui = bs4DashPage(
             "iie_h",
             height = 135))),
       
+      controlbar = dashboardControlbar(
+        id = "controlbar",
+        collapsed = FALSE,
+        pinned =TRUE,
+        title = "updateControlbar",
+        bs4Card(
+          title = "Leyenda",
+          width = 12,
+          height = 250,
+          solidHeader = TRUE,
+          leafletOutput(
+            outputId = "leyenda",
+            width = "80%",
+            height = "90%"))
+      ),
+      
       body = bs4DashBody(
         use_theme(tema),
           bs4Card(
@@ -123,11 +139,8 @@ ui = bs4DashPage(
                 outputId = "map_r",
                 width = 760,
                 height = 520))
-            )),
-        bs4TabItems(
-          bs4TabItem(tabName = "Leyyenddda",
-            bs4Card(title = "Leyenda")))
-        ))
+            )))
+        )
 
 server = function(input, output, session) {
   output$map_v <-  renderLeaflet({
@@ -169,12 +182,21 @@ server = function(input, output, session) {
                   layerId = ~ id,
                   opacity = 1,
                   stroke = TRUE,
-                  smoothFactor = 0.03) |>  
-    addLegend(position = "topright",
-                pal = cal, values = values(pixeles),
-                opacity = 1,
-              )
+                  smoothFactor = 0.03) #|>  
+    #addLegend(position = "topright",
+    #           pal = cal, values = values(pixeles),
+    #            opacity = 1,
+    #          )
     })  
+  
+  output$leyenda <- renderLeaflet({
+    leaflet(options = leafletOptions(zoomControl = FALSE)) |> 
+      addLegend(position = "topleft",
+                pal = cal, 
+                values = values(mapa_r()),
+                opacity = 1,
+      )
+  })  
   
   output$iie_h <- renderPlot({
     ggplot(tibble(x = values(mapa_r(), na.rm = T)), 
@@ -192,8 +214,9 @@ server = function(input, output, session) {
                  color = colores(), 
                  linewidth = 0.5, 
                  linetype = tipo_l())
-    }) 
-
+  }) 
+  
+  
   # Cambio de mapa
   output$edo_tit0 <- renderText({input$estado})
 #  output$edo_tit1 <- renderText({input$estado})
