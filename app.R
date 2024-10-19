@@ -9,6 +9,8 @@ library(bs4Dash)
 library(dplyr)
 library(fresh)
 library(stringr)
+library(rmapshaper)
+
 
 mapas_iie_muni_r <- list.files("./Estados/",
                         full.names = TRUE, 
@@ -230,7 +232,7 @@ server = function(input, output, session) {
       st_transform(WGS84) |> 
       mutate(IIE_2018_mean = IIE_2018_mean * 100,
              id = 1:n()) |> 
-      st_simplify(preserveTopology = TRUE, dTolerance = 100)})
+      ms_simplify()})
             
   mapa_r <- reactive({
     mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
