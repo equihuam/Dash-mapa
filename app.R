@@ -64,20 +64,21 @@ tema <- bs4Dash_theme(
 ui = bs4DashPage(
       title = "Índice de Integridad Ecosistémica - Promedios Municipales",
       header = bs4DashNavbar (title = "Integridad Ecosistémica",
-                              titleWidth = "21%",
                               border = TRUE,
                               fixed = TRUE,
                               tags$style(
                                 type = 'text/css', 
-                                '.brand-link {color: white!important;}
-                                 .nav-link {color: white!important;}
-                                 pre {background-color: white!important;}
-                                 .navbar-white {background-color: #3B4252; }',
+                                '.brand-link {color: white!important;}',
+                                '.nav-link {color: white!important;}',
+                                'pre {background-color: white!important;}',
+                                '.navbar-white {background-color: #3B4252; }'
                               )),
       
       sidebar = bs4DashSidebar(
         minified = FALSE,
         collapsed = FALSE,
+        width = "17%",
+        flat = TRUE,
         selectInput(
           inputId = "estado",
           "Elige la entidad",
@@ -105,16 +106,16 @@ ui = bs4DashPage(
         id = "controlbar",
         collapsed = FALSE,
         pinned =TRUE,
-        title = "updateControlbar",
+        width = "15%",
         bs4Card(
           title = "Leyenda",
           width = 12,
-          height = 250,
+          height = 290,
           solidHeader = TRUE,
           leafletOutput(
-            outputId = "leyenda",
-            width = "80%",
-            height = "90%"))
+              outputId = "leyenda",
+              width = "95%",
+              height = "95%"))
       ),
       
       body = bs4DashBody(
@@ -159,7 +160,6 @@ server = function(input, output, session) {
                   fillOpacity = 0,
                   weight = 0.2,
                   color = "gray",
-                  #popup = ~ NOMGEO,
                   layerId = ~ id,
                   opacity = 1,
                   stroke = TRUE,
@@ -184,21 +184,18 @@ server = function(input, output, session) {
                   layerId = ~ id,
                   opacity = 1,
                   stroke = TRUE,
-                  smoothFactor = 0.03) #|>  
-    #addLegend(position = "topright",
-    #           pal = cal, values = values(pixeles),
-    #            opacity = 1,
-    #          )
-    })  
+                  smoothFactor = 0.03)
+  })
   
   output$leyenda <- renderLeaflet({
     leaflet(options = leafletOptions(zoomControl = FALSE)) |> 
+      setView(lng = -71.0589, lat = 42.3601, zoom = 12) |> 
       addLegend(position = "topleft",
+                title = "IIE (%)",
                 pal = cal, 
                 values = values(mapa_r()),
                 opacity = 1,
-      )
-  })  
+      )})  
   
   output$iie_h <- renderPlot({
     ggplot(tibble(x = values(mapa_r(), na.rm = T)), 
