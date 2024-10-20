@@ -95,7 +95,7 @@ ui <- bs4DashPage(
                                 '.nav-link {color: white!important;}',
                                 'pre {background-color: white!important;}',
                                 '.navbar-white {background-color: #3B4252; }',
-                                '.card-body {line-height: 1.0;}'
+                                '.card-body {line-height: 1.2;}'
                               )),
       
       sidebar = bs4DashSidebar(

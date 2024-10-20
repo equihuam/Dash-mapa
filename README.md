@@ -1,1 +1,7 @@
-![](https://github.com/equihuam/Dash-mapa/blob/bs4d/i-gamma-1_alfa.png)
+
+
+![](plecas_Página_1.png)
+
+
+
+![](i-Gamma-3.png)
