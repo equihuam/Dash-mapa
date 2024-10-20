@@ -63,40 +63,29 @@ tema <- bs4Dash_theme(
 i_gamma <- dashboardBrand(
   title = "Integridad Ecosistémica",
   href = "http://i-gamma.net/",
-  image = "https://lh4.googleusercontent.com/uPZvJvEi_Ao2b48t2mhphuIHjnakh9UF09jge5PfUuIV_VPs7CW5Qh98bF82sWOY7AeRL2b_T7zLo1T3bT6Wzq8_JuaoBNYeHHZMAXKFoNWcATKzb8_HvmFohFUYsUGo=w1280",
-#  align = "left",
-#  width = "100%",
-  opacity = 1.0
-)
+  image = "https://github.com/equihuam/Dash-mapa/raw/bs4d/i-Gamma-3.png",
+  opacity = 1.0)
 
-i_gamma_2 <- div(
-  span(
-    img(
-      src = "i-gamma-1_alfa.ico",
-      height = 40,
-      width = "40%"
-    ),
-    "Integridad Ecosistémica"),
-  align = "left",
-  width = "100%",
-  style = "padding-left:10px;"
-)
+
 
 ui <- bs4DashPage(
       freshTheme = tema,
       title = "Índice de Integridad Ecosistémica - México",
       dark =  FALSE,
-      header = bs4DashNavbar (title = i_gamma,
-                              border = TRUE,
-                              fixed = TRUE,
-                              tags$style(
-                                type = 'text/css', 
-                                '.brand-link {color: white!important;}',
-                                '.nav-link {color: white!important;}',
-                                'pre {background-color: white!important;}',
-                                '.navbar-white {background-color: #3B4252; }',
-                                '.card-body {line-height: 1.2;}'
-                              )),
+      
+      header = bs4DashNavbar(
+        title =i_gamma,
+        border = TRUE,
+        fixed = TRUE,
+        tags$style(
+          type = 'text/css', 
+          '.brand-link {color: white!important;
+                        font-size: 1rem;}',
+          '.nav-link {color: white!important;}',
+          'pre {background-color: white!important;}',
+          '.navbar-white {background-color: #3B4252; }',
+          '.card-body {line-height: 1.2;}'
+        )),
       
       sidebar = bs4DashSidebar(
         minified = FALSE,
