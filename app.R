@@ -71,7 +71,8 @@ i_gamma <- dashboardBrand(
 ui <- bs4DashPage(
       freshTheme = tema,
       title = "Índice de Integridad Ecosistémica - México",
-      dark =  FALSE,
+      dark = NULL,
+      help = NULL,
       
       header = bs4DashNavbar(
         title =i_gamma,
@@ -84,7 +85,7 @@ ui <- bs4DashPage(
           '.nav-link {color: white!important;}',
           'pre {background-color: white!important;}',
           '.navbar-white {background-color: #3B4252; }',
-          '.card-body {line-height: 1.2;}'
+          '.card-body {line-height: 1.15;}'
         )),
       
       sidebar = bs4DashSidebar(
@@ -119,6 +120,7 @@ ui <- bs4DashPage(
         box(
           title = "Explicación",
           width = 12,
+          elevation = 5,
           maximizable = TRUE,
           uiOutput(
             outputId = "intro",
