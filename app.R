@@ -146,37 +146,42 @@ ui <- bs4DashPage(
       body = bs4DashBody(
         use_theme(tema),
         fluidRow(
-          box(
-          title = textOutput("edo_tit0"),
-                                 boxToolSize = "sm",
-                                 width = 9,
-                                 height = 600,
-          tabsetPanel(
-            tabItem(
-              tabName = "municipios",
-              title =  "Vectores",    # textOutput("edo_tit1"),
-              solidHeader = TRUE,
-              leafletOutput(
-                outputId = "map_v",
-                width = 760,
-                height = 520)),
-            tabItem(
-              tabName = "pixeles",
-              title = "pixeles",      # textOutput("edo_tit2"),
-              solidHeader = TRUE,
-              leafletOutput(
-                outputId = "map_r",
-                width = 760,
-                height = 520)),
-            tabItem(
-              tabName = "modelo_3c",
-              title = "Modelo",
-              solidHeader = TRUE,
-              imageOutput(
-                outputId = "modelo"  
+          column(width = 12,
+            box(
+              title = textOutput("edo_tit0"),
+              boxToolSize = "sm",
+              width = 9,
+              height = 600,
+              
+            tabsetPanel(
+              tabItem(
+                tabName = "municipios",
+                title =  "Vectores",    # textOutput("edo_tit1"),
+                solidHeader = TRUE,
+                leafletOutput(
+                  outputId = "map_v",
+                  width = 760,
+                  height = 520)),
+              tabItem(
+                tabName = "pixeles",
+                title = "pixeles",      # textOutput("edo_tit2"),
+                solidHeader = TRUE,
+                leafletOutput(
+                  outputId = "map_r",
+                  width = 760,
+                  height = 520)),
+              tabItem(
+                tabName = "modelo_3c",
+                title = "Modelo",
+                solidHeader = TRUE,
+                imageOutput(outputId = "modelo")
+                )
               )
             )
-            )))))
+          )
+        )
+      )
+    )
 
 server <- function(input, output, session) {
   output$intro <- renderUI(markdown(readLines("explicación.txt")),
