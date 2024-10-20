@@ -151,7 +151,7 @@ ui <- bs4DashPage(
                                  height = 600,
           tabsetPanel(
             tabItem(
-              "municipios",
+              tabName = "municipios",
               title =  "Vectores",    # textOutput("edo_tit1"),
               solidHeader = TRUE,
               leafletOutput(
@@ -159,18 +159,34 @@ ui <- bs4DashPage(
                 width = 760,
                 height = 520)),
             tabItem(
-              "pixeles",
+              tabName = "pixeles",
               title = "pixeles",      # textOutput("edo_tit2"),
               solidHeader = TRUE,
               leafletOutput(
                 outputId = "map_r",
                 width = 760,
-                height = 520))
+                height = 520)),
+            tabItem(
+              tabName = "modelo_3c",
+              title = "Modelo",
+              solidHeader = TRUE,
+              imageOutput(
+                outputId = "modelo"  
+              )
+            )
             )))))
 
 server <- function(input, output, session) {
   output$intro <- renderUI(markdown(readLines("explicación.txt")),
                            outputArgs = )
+  output$modelo <-  renderImage({
+    list(src = "Modelo de tres capas.png",
+         alt = "Modelo de Integridad ecosisttémica de tres capas",
+         width="800",
+         height="400",
+         style="vertical-align:middle;margin:50px 10px")},
+    deleteFile = FALSE)
+  
     
   output$map_v <-  renderLeaflet({
       mapa() |> 
@@ -244,9 +260,7 @@ server <- function(input, output, session) {
   
   # Cambio de mapa
   output$edo_tit0 <- renderText({input$estado})
-#  output$edo_tit1 <- renderText({input$estado})
-#  output$edo_tit2 <- renderText({input$estado})
-  
+
   mapa <- reactive({
     colores(c("red", "red", "darkgreen"))
     mapa <- st_read(edos_lista$vect[grepl(input$estado, 
