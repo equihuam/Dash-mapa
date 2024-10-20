@@ -44,7 +44,7 @@ datos_edos <- read.csv("datos_edos.txt", header = TRUE) |>
 # Tema
 tema <- bs4Dash_theme(
     primary = "lightblue",
-    secondary = "#B48EAD",
+    warning = "#272c30",
     success = "#A3BE8C",
     danger = "#BF616A",
     "sidebar-light-bg" = "#3B4252",
@@ -59,11 +59,34 @@ tema <- bs4Dash_theme(
     "gray-900" = "#FFF",
     "navbar_light_color" = "#FFF"
   )
-#
 
-ui = bs4DashPage(
-      title = "Índice de Integridad Ecosistémica - Promedios Municipales",
-      header = bs4DashNavbar (title = "Integridad Ecosistémica",
+i_gamma <- dashboardBrand(
+  title = "Integridad Ecosistémica",
+  href = "http://i-gamma.net/",
+  image = "https://lh4.googleusercontent.com/uPZvJvEi_Ao2b48t2mhphuIHjnakh9UF09jge5PfUuIV_VPs7CW5Qh98bF82sWOY7AeRL2b_T7zLo1T3bT6Wzq8_JuaoBNYeHHZMAXKFoNWcATKzb8_HvmFohFUYsUGo=w1280",
+#  align = "left",
+#  width = "100%",
+  opacity = 1.0
+)
+
+i_gamma_2 <- div(
+  span(
+    img(
+      src = "i-gamma-1_alfa.ico",
+      height = 40,
+      width = "40%"
+    ),
+    "Integridad Ecosistémica"),
+  align = "left",
+  width = "100%",
+  style = "padding-left:10px;"
+)
+
+ui <- bs4DashPage(
+      freshTheme = tema,
+      title = "Índice de Integridad Ecosistémica - México",
+      dark =  FALSE,
+      header = bs4DashNavbar (title = i_gamma,
                               border = TRUE,
                               fixed = TRUE,
                               tags$style(
@@ -71,36 +94,47 @@ ui = bs4DashPage(
                                 '.brand-link {color: white!important;}',
                                 '.nav-link {color: white!important;}',
                                 'pre {background-color: white!important;}',
-                                '.navbar-white {background-color: #3B4252; }'
+                                '.navbar-white {background-color: #3B4252; }',
+                                '.card-body {line-height: 1.0;}'
                               )),
       
       sidebar = bs4DashSidebar(
         minified = FALSE,
         collapsed = FALSE,
+        elevation = 5,
         width = "17%",
-        flat = TRUE,
+        overlay = FALSE,
         selectInput(
           inputId = "estado",
           "Elige la entidad",
           choices = edos_lista$edo,
           selected = "Aguascalientes"),
-        bs4Accordion(
+        box(
+          title = "Rangos de IIE",
+          collapsed = TRUE,
+          width = 12,
           id = "acordeon_1",
-          bs4AccordionItem(
-            title = "Rango IIE",
             sliderInput(
               inputId = "iie_min",
               "Límite mínimo:",0, 100, value = 0),
             sliderInput(
               inputId = "iie_max",
               "Límite máximo:",
-              0, 100, value = 100))),
+              0, 100, value = 100)),
         box(
-          title = "Lugar", width = 12,
+          title = "Estadística", 
+          width = 12,
+          collapsed = TRUE,
           verbatimTextOutput("muni"),
-          plotOutput(
-            "iie_h",
-            height = 135))),
+          plotOutput("iie_h", height = 135)),
+        box(
+          title = "Explicación",
+          width = 12,
+          maximizable = TRUE,
+          uiOutput(
+            outputId = "intro",
+            container = tags$small)
+      )),
       
       controlbar = dashboardControlbar(
         id = "controlbar",
@@ -120,7 +154,8 @@ ui = bs4DashPage(
       
       body = bs4DashBody(
         use_theme(tema),
-          bs4Card(
+        fluidRow(
+          box(
           title = textOutput("edo_tit0"),
                                  boxToolSize = "sm",
                                  width = 9,
@@ -142,10 +177,12 @@ ui = bs4DashPage(
                 outputId = "map_r",
                 width = 760,
                 height = 520))
-            )))
-        )
+            )))))
 
-server = function(input, output, session) {
+server <- function(input, output, session) {
+  output$intro <- renderUI(markdown(readLines("explicación.txt")),
+                           outputArgs = )
+    
   output$map_v <-  renderLeaflet({
       mapa() |> 
       filter((IIE_2018_mean <= input$iie_max) &
