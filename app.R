@@ -32,10 +32,14 @@ edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x)
                      sub(".gpkg", "", basename(x)))), 
                      vect = mapas_iie_muni_v,
                      rast = mapas_iie_muni_r) |> 
+              mutate(edo = str_replace_all(edo, "_", " ")) |> 
               arrange(edo)
 
-cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.txt"))
-datos_edos <- read.csv("datos_edos.txt", header = TRUE) |> 
+# La tabla de cantiles inicia con el año del mapa de iie
+cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.csv")[,2:3])
+
+
+datos_edos <- read.csv("datos_edos.csv", header = TRUE) |> 
               mutate(NOMGEO = if_else(NOMGEO == "México",
                                       "Estado de México", NOMGEO))
 
@@ -86,7 +90,9 @@ ui <- bs4DashPage(
           'pre {background-color: white!important;}',
           '.navbar-white {background-color: #3B4252; }',
           '.card-body {line-height: 1.15;}'
-        )),
+        ), 
+        sidebarIcon = icon("map")
+      ),
       
       sidebar = bs4DashSidebar(
         minified = FALSE,
@@ -99,11 +105,11 @@ ui <- bs4DashPage(
           "Elige la entidad",
           choices = edos_lista$edo,
           selected = "Aguascalientes"),
-        box(
-          title = "Rangos de IIE",
+        box(title = "Rangos de IIE",
           collapsed = TRUE,
           width = 12,
-          id = "acordeon_1",
+#          boxDropdown(icon = shiny::icon("wrench")),
+          id = "bloque_1",
             sliderInput(
               inputId = "iie_min",
               "Límite mínimo:",0, 100, value = 0),
@@ -152,6 +158,7 @@ ui <- bs4DashPage(
               boxToolSize = "sm",
               width = 9,
               height = 600,
+              maximizable = TRUE,
               
             tabsetPanel(
               tabItem(
@@ -270,17 +277,21 @@ server <- function(input, output, session) {
 
   mapa <- reactive({
     colores(c("red", "red", "darkgreen"))
-    mapa <- st_read(edos_lista$vect[grepl(input$estado, 
-                                 edos_lista$edo)][1], 
-                    quiet = TRUE) |> 
+    edo_v <- str_replace_all(edos_lista$vect[grepl(input$estado, 
+                                                 edos_lista$edo)][1],
+                           " ", "_")
+    mapa <- st_read(edo_v, quiet = TRUE) |>
       st_transform(WGS84) |> 
       mutate(IIE_2018_mean = IIE_2018_mean * 100,
              id = 1:n()) |> 
       ms_simplify()})
             
   mapa_r <- reactive({
-    mapa_r <- 100 * rast(edos_lista$rast[grepl(input$estado, 
-                                               edos_lista$edo)][1])
+    edo_r <- str_replace_all(edos_lista$rast[grepl(input$estado, 
+                                                 edos_lista$edo)][1],
+                           " ", "_")
+    
+    mapa_r <- 100 * rast(edo_r)
   })
 
   iie_2018_ini <- reactive({
