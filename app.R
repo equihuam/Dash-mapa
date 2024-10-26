@@ -102,13 +102,13 @@ ui <- bs4DashPage(
         overlay = FALSE,
         selectInput(
           inputId = "estado",
-          "Elige la entidad",
+          label = "Elige la entidad",
           choices = edos_lista$edo,
           selected = "Aguascalientes"),
         box(title = "Rangos de IIE",
           collapsed = TRUE,
           width = 12,
-#          boxDropdown(icon = shiny::icon("wrench")),
+          icon = shiny::icon("signal"),
           id = "bloque_1",
             sliderInput(
               inputId = "iie_min",
@@ -120,18 +120,10 @@ ui <- bs4DashPage(
         box(
           title = "Estadística", 
           width = 12,
-          collapsed = TRUE,
+          collapsed = FALSE,
           verbatimTextOutput("muni"),
-          plotOutput("iie_h", height = 135)),
-        box(
-          title = "Explicación",
-          width = 12,
-          elevation = 5,
-          maximizable = TRUE,
-          uiOutput(
-            outputId = "intro",
-            container = tags$small)
-      )),
+          plotOutput("iie_h", height = 135))
+      ),
       
       controlbar = dashboardControlbar(
         id = "controlbar",
@@ -140,13 +132,23 @@ ui <- bs4DashPage(
         width = "15%",
         bs4Card(
           title = "Leyenda",
+          collapsed = TRUE, 
           width = 12,
           height = 290,
           solidHeader = TRUE,
           leafletOutput(
               outputId = "leyenda",
               width = "95%",
-              height = "95%"))
+              height = "95%")),
+        box(
+          title = "Explicación",
+          width = 12,
+          elevation = 5,
+          maximizable = TRUE,
+          uiOutput(
+            outputId = "intro",
+            container = tags$small)
+        )
       ),
       
       body = bs4DashBody(
@@ -290,15 +292,15 @@ server <- function(input, output, session) {
     edo_r <- str_replace_all(edos_lista$rast[grepl(input$estado, 
                                                  edos_lista$edo)][1],
                            " ", "_")
-    
     mapa_r <- 100 * rast(edo_r)
   })
 
   iie_2018_ini <- reactive({
     iie_2018 <- datos_edos |> 
-      filter(input$estado == str_replace_all(NOMGEO, " ", "_")) |> 
+      filter(input$estado == NOMGEO) |> 
       mutate(iie = format(iie.2018_mean, digits = 2, 
                           nsmall = 1), .keep = "used")
+    return(iie_2018)
   })
 
   vals_ini <- eventReactive(input$estado, {
