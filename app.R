@@ -232,6 +232,7 @@ server <- function(input, output, session) {
                       layerId = ~ id,
                       smoothFactor = 0.03) |> 
           addPolygons(data = mapa_v(),
+                      group = "municipios",
                       fillOpacity = 0,
                       weight = 0.2,
                       color = "gray",
@@ -240,19 +241,27 @@ server <- function(input, output, session) {
                       stroke = TRUE,
                       smoothFactor = 0.03) |> 
           addPolygons(data = mapa_v_anp(),
+                      group = "ANP-p",
                       fillColor = ~ cal(IIE_2018_mean),
                       fillOpacity = 1,
                       stroke = FALSE,
                       smoothFactor = 0.03) |> 
           addPolygons(data = mapa_v_anp(),
+                      group = "ANP-l",
                       fillOpacity = 0,
                       weight = 0.5,
                       color = "violet",
                       layerId = ~ id,
                       opacity = 1,
                       stroke = TRUE,
-                      smoothFactor = 0.03)
-        
+                      smoothFactor = 0.03) |>
+          addLayersControl(
+            overlayGroups = c(
+              "municipios",
+              "ANP-p",
+              "ANP-l"),
+            options = layersControlOptions(collapsed = FALSE))
+            
       } else
       {
         mapa_v() |> 
@@ -265,13 +274,19 @@ server <- function(input, output, session) {
                     layerId = ~ id,
                     smoothFactor = 0.03) |> 
         addPolygons(data = mapa_v(),
+                    group = "municipios",
                     fillOpacity = 0,
                     weight = 0.2,
                     color = "gray",
                     layerId = ~ id,
                     opacity = 1,
                     stroke = TRUE,
-                    smoothFactor = 0.03)
+                    smoothFactor = 0.03) |> 
+          addLayersControl(
+            overlayGroups = c("municipios"),
+            options = layersControlOptions(collapsed = FALSE)) |> 
+          hideGroup("municipios")
+        
       }
     })
   
@@ -370,7 +385,8 @@ server <- function(input, output, session) {
       }
       mapa_v_anp <- st_as_sf(mapa) |> 
         st_transform(WGS84) |> 
-        mutate(IIE_2018_mean = iie_anp_mean * 100)
+        mutate(IIE_2018_mean = iie_anp_mean * 100,
+               id_anp = 1:n())
     }
   })
           
@@ -408,7 +424,7 @@ server <- function(input, output, session) {
   
   valores <- reactive({
     if(is.null(input$map_shape_click)) return(vals_ini())
-       else {
+    else {
          iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == input$map_shape_click$id]
          return(tibble(cotas_iie = c(cuantiles_iie, iie)))
        } 
@@ -456,6 +472,7 @@ server <- function(input, output, session) {
   #click on polygon
   
   observeEvent(input$map_v_shape_click, {
+    print(input$map_shape_click$group)
     colores(c("red", "red", "blue"))
     mapa_click <- input$map_v_shape_click
     municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
