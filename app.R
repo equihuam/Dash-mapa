@@ -88,6 +88,7 @@ ui <- bs4DashPage(
         fixed = TRUE,
         tags$style(
           type = 'text/css', 
+          '#muni {text-wrap: wrap;}',
           '.brand-link {color: white!important;
                         font-size: 1rem;}',
           '.nav-link {color: white!important;}',
@@ -180,20 +181,20 @@ ui <- bs4DashPage(
             tabsetPanel(
               tabItem(
                 tabName = "municipios",
-                title =  "Vectores",    # textOutput("edo_tit1"),
+                title =  "Mapa",    # textOutput("edo_tit1"),
                 solidHeader = TRUE,
                 leafletOutput(
                   outputId = "map_v",
                   width = 760,
                   height = 520)),
-              tabItem(
-                tabName = "pixeles",
-                title = "pixeles",      # textOutput("edo_tit2"),
-                solidHeader = TRUE,
-                leafletOutput(
-                  outputId = "map_r",
-                  width = 760,
-                  height = 520)),
+              # tabItem(
+              #   tabName = "datos",
+              #   title = "datos",      # textOutput("edo_tit2"),
+              #   solidHeader = TRUE),
+                # leafletOutput(
+                #   outputId = "map_r",
+                #   width = 760,
+                #   height = 520)),
               tabItem(
                 tabName = "modelo_3c",
                 title = "Modelo",
@@ -220,96 +221,118 @@ server <- function(input, output, session) {
   
     
   output$map_v <-  renderLeaflet({
+      pixeles <- mapa_r()
+      names(pixeles) <- "iie"
+      pixeles <- pixeles |>
+        mutate(iie = if_else((iie <= input$iie_max) &
+                               (iie >= input$iie_min), iie, NA),
+               .keep = "none")
+      mapa_v_filtrado <- mapa_v() |>
+        filter((IIE_2018_mean <= input$iie_max) &
+               (IIE_2018_mean > input$iie_min))
+        
       if (anp_edo()$anp_id[1] != "sin datos")
       {
-        mapa_v() |> 
-          filter((IIE_2018_mean <= input$iie_max) &
-                   (IIE_2018_mean > input$iie_min)) |> 
           leaflet() |> 
-          addPolygons(fillColor = ~ cal(IIE_2018_mean),
-                      fillOpacity = 1,
-                      stroke = FALSE,
-                      layerId = ~ id,
-                      smoothFactor = 0.03) |> 
-          addPolygons(data = mapa_v(),
-                      group = "municipios",
-                      fillOpacity = 0,
-                      weight = 0.2,
-                      color = "gray",
-                      layerId = ~ id,
-                      opacity = 1,
-                      stroke = TRUE,
-                      smoothFactor = 0.03) |> 
-          addPolygons(data = mapa_v_anp(),
-                      group = "ANP-p",
-                      fillColor = ~ cal(IIE_2018_mean),
-                      fillOpacity = 1,
-                      stroke = FALSE,
-                      smoothFactor = 0.03) |> 
-          addPolygons(data = mapa_v_anp(),
-                      group = "ANP-l",
-                      fillOpacity = 0,
-                      weight = 0.5,
-                      color = "violet",
-                      layerId = ~ id,
-                      opacity = 1,
-                      stroke = TRUE,
-                      smoothFactor = 0.03) |>
+          addMapPane(name = "uno", zIndex = 5) |> 
+          addMapPane(name = "dos", zIndex = 4) |> 
+          addMapPane(name = "tres", zIndex = 3) |> 
+          addMapPane(name = "cuatro", zIndex = 2) |> 
+          addMapPane(name = "cinco", zIndex = 1) |>
+          addPolygons(
+            data = mapa_v(),
+            group = "municipios",
+            options = pathOptions(pane = "uno"),
+            fillOpacity = 0,
+            weight = 1,
+            color = "darkblue",
+            layerId = ~ id,
+            opacity = 1,
+            stroke = TRUE,
+            smoothFactor = 0.03) |> 
+          addPolygons(
+            data = mapa_v_anp(),
+            group = "ANP",
+            options = pathOptions(pane = "dos"),
+            fillOpacity = 0,
+            weight = 1,
+            color = "cyan",
+            layerId = ~ id_anp,
+            opacity = 1,
+            stroke = TRUE,
+            smoothFactor = 0.03) |>
+          addPolygons(
+            data = mapa_v_anp(),
+            group = "IIE ANP",
+            layerId = ~ id_anp,
+            options = pathOptions(pane = "tres"),
+            fillColor = ~ cal(IIE_2018_mean),
+            fillOpacity = 1,
+            stroke = FALSE,
+            smoothFactor = 0.03) |> 
+          addRasterImage( 
+            group = "IIE raster",
+            options = pathOptions(pane = "cuatro"),
+            x = pixeles, 
+            colors = cal) |> 
+          addPolygons(
+            data = mapa_v_filtrado,
+            fillColor = ~ cal(IIE_2018_mean),
+            group = "IIE municipal",
+            options = pathOptions(pane = "cinco"),
+            fillOpacity = 1,
+            stroke = FALSE,
+            layerId = ~ id,
+            smoothFactor = 0.03) |> 
           addLayersControl(
             overlayGroups = c(
               "municipios",
-              "ANP-p",
-              "ANP-l"),
-            options = layersControlOptions(collapsed = FALSE))
-            
+              "ANP",
+              "IIE ANP",              
+              "IIE raster",
+              "IIE municipal"),
+            options = layersControlOptions(collapsed = FALSE)) |> 
+          hideGroup(group = c("IIE municipal", "IIE ANP"))
+        
       } else
       {
-        mapa_v() |> 
-        filter((IIE_2018_mean <= input$iie_max) &
-               (IIE_2018_mean > input$iie_min)) |> 
-        leaflet() |> 
-        addPolygons(fillColor = ~ cal(IIE_2018_mean),
-                    fillOpacity = 1,
-                    stroke = FALSE,
-                    layerId = ~ id,
-                    smoothFactor = 0.03) |> 
-        addPolygons(data = mapa_v(),
-                    group = "municipios",
-                    fillOpacity = 0,
-                    weight = 0.2,
-                    color = "gray",
-                    layerId = ~ id,
-                    opacity = 1,
-                    stroke = TRUE,
-                    smoothFactor = 0.03) |> 
+          leaflet() |> 
+          addMapPane(name = "uno", zIndex = 4) |> 
+          addMapPane(name = "dos", zIndex = 3) |> 
+          addMapPane(name = "tres", zIndex = 2) |> 
+          addPolygons(
+            data = mapa_v(),
+            options = pathOptions(pane = "uno"),
+            group = "municipios",
+            fillOpacity = 0,
+            weight = 1,
+            color = "darkblue",
+            layerId = ~ id,
+            opacity = 1,
+            stroke = TRUE,
+            smoothFactor = 0.03) |>
+          addRasterImage( 
+            options = pathOptions(pane = "dos"),
+            group = "IIE raster",
+            x = pixeles, 
+            colors = cal) |>
+          addPolygons(
+            data = mapa_v_filtrado,
+            options = pathOptions(pane = "tres"),
+            fillColor = ~ cal(IIE_2018_mean),
+            group = "IIE municipal",
+            fillOpacity = 1,
+            stroke = FALSE,
+            layerId = ~ id,
+            smoothFactor = 0.03) |> 
           addLayersControl(
-            overlayGroups = c("municipios"),
+            overlayGroups = c("municipios",
+                              "IIE raster", 
+                              "IIE municipal"),
             options = layersControlOptions(collapsed = FALSE)) |> 
-          hideGroup("municipios")
-        
+          hideGroup(group = c("IIE municipal"))
       }
     })
-  
-  output$map_r <- renderLeaflet({
-    pixeles <- mapa_r()
-    names(pixeles) <- "iie"
-    pixeles <- pixeles |> 
-      mutate(iie = if_else((iie <= input$iie_max) &
-                           (iie >= input$iie_min), iie, NA), 
-             .keep = "none")
-    
-    leaflet() |> 
-    addRasterImage(pixeles, colors = cal) |> 
-    addPolygons(data = mapa_v(),
-                  fillOpacity = 0,
-                  weight = 0.5,
-                  color = "darkblue",
-                  # popup = ~ NOMGEO,
-                  layerId = ~ id,
-                  opacity = 1,
-                  stroke = TRUE,
-                  smoothFactor = 0.03)
-  })
   
   output$leyenda <- renderLeaflet({
     leaflet(options = leafletOptions(zoomControl = FALSE)) |> 
@@ -379,9 +402,9 @@ server <- function(input, output, session) {
       for (m in anp_edo()$anp_id)
       {
         if (m == anp_edo()$anp_id[1])
-          mapa <- vect(paste0("ANP/", m, ".gpkg"))
+          mapa <- vect(paste0("ANP/anp_id_", m, ".gpkg"))
         else
-          mapa <- rbind(mapa, vect(paste0("ANP/", m, ".gpkg")))
+          mapa <- rbind(mapa, vect(paste0("ANP/anp_id_", m, ".gpkg")))
       }
       mapa_v_anp <- st_as_sf(mapa) |> 
         st_transform(WGS84) |> 
@@ -389,6 +412,24 @@ server <- function(input, output, session) {
                id_anp = 1:n())
     }
   })
+  
+  # mapa_v_anp_buf <- reactive({
+  #   if (anp_edo()$anp_id[1] != "sin datos")
+  #   {
+  #     for (m in anp_edo()$anp_id)
+  #     {
+  #       if (m == anp_edo()$anp_id[1])
+  #         mapa <- vect(paste0("ANP/", m, ".gpkg"))
+  #       else
+  #         mapa <- rbind(mapa, vect(paste0("ANP/", m, ".gpkg")))
+  #     }
+  #     mapa_v_anp <- st_as_sf(mapa) |> 
+  #       st_transform(WGS84) |> 
+  #       mutate(IIE_2018_mean = iie_anp_mean * 100,
+  #              id_anp = 1:n())
+  #   }
+  # })
+  
           
   mapa_r <- reactive({
     edo_r <- str_replace_all(edos_lista$rast[grepl(input$estado,
@@ -455,6 +496,21 @@ server <- function(input, output, session) {
              "ANPs: ", num_anp))
     })
   
+  
+  observeEvent(anp_edo(),{
+    if (anp_edo()$anp_id[1] == "sin datos")
+      num_anp <- 0
+    else
+      num_anp <- nrow(anp_edo())
+    
+    output$muni <- renderText(
+      paste0("Estado:\n  ",
+             input$estado,
+             "\nIIE-2018: ",
+             iie_2018_ini()$iie, " %\n",
+             "ANPs: ", num_anp))
+  })
+
   observeEvent(input$tipo_anp, {
     if (anp_edo()$anp_id[1] == "sin datos")
       num_anp <- 0
@@ -472,27 +528,40 @@ server <- function(input, output, session) {
   #click on polygon
   
   observeEvent(input$map_v_shape_click, {
-    print(input$map_shape_click$group)
     colores(c("red", "red", "blue"))
     mapa_click <- input$map_v_shape_click
-    municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
+
+    if (str_detect(mapa_click$group, "muni"))
+    {
+      iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == mapa_click$id]
+      iie_2018 <- format(iie, digits = 2, nsmall = 1)
+      municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
+      output$muni <- renderText(paste0("Municipio:\n  ", municipio,
+                                       "\nIIE-2018: ", iie_2018, " %"))
+    } else
+    {
+      if (str_detect(mapa_click$group, "ANP"))
+      {
+        iie <- mapa_v_anp()$IIE_2018_mean[mapa_v_anp()$id_anp == mapa_click$id]
+        iie_2018 <- format(iie, digits = 2, nsmall = 1)
+        anp <- mapa_v_anp()$NOMBRE[mapa_v_anp()$id_anp == mapa_click$id]
+        output$muni <- renderText(paste0("ANP:\n  ", anp,
+                                         "\nIIE-2018: ", iie_2018, " %"))
+      }
+    }
     
-    iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == mapa_click$id]
-    iie_2018 <- format(iie, digits = 2, nsmall = 1)
-    output$muni <- renderText(paste0("Municipio:\n  ", municipio,
-                                     "\nIIE-2018: ", iie_2018, " %"))
   }) 
 
-  observeEvent(input$map_r_shape_click, {
-    colores(c("red", "red", "blue"))
-    mapa_click <- input$map_r_shape_click
-    municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
-    
-    iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == mapa_click$id]
-    iie_2018 <- format(iie, digits = 2, nsmall = 1)
-    output$muni <- renderText(paste0("Municipio:\n  ", municipio,
-                                     "\nIIE-2018: ", iie_2018, " %"))
-  }) 
+  # observeEvent(input$map_r_shape_click, {
+  #   colores(c("red", "red", "blue"))
+  #   mapa_click <- input$map_r_shape_click
+  #   municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
+  #   
+  #   iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == mapa_click$id]
+  #   iie_2018 <- format(iie, digits = 2, nsmall = 1)
+  #   output$muni <- renderText(paste0("Municipio:\n  ", municipio,
+  #                                    "\nIIE-2018: ", iie_2018, " %"))
+  # }) 
   
     
 }
