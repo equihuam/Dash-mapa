@@ -552,6 +552,18 @@ server <- function(input, output, session) {
     
   }) 
 
+  # observeEvent(input$map_r_shape_click, {
+  #   colores(c("red", "red", "blue"))
+  #   mapa_click <- input$map_r_shape_click
+  #   municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
+  #   
+  #   iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == mapa_click$id]
+  #   iie_2018 <- format(iie, digits = 2, nsmall = 1)
+  #   output$muni <- renderText(paste0("Municipio:\n  ", municipio,
+  #                                    "\nIIE-2018: ", iie_2018, " %"))
+  # }) 
+  
+    
 }
 
 shinyApp(ui, server)
