@@ -8,8 +8,10 @@ library(sys)
 library(bs4Dash)
 library(dplyr)
 library(fresh)
+library(flexdashboard)
 library(stringr)
 library(rmapshaper)
+library(plotly)
 
 
 mapas_iie_muni_r <- list.files("./Estados/",
@@ -74,8 +76,6 @@ i_gamma <- dashboardBrand(
   image = "https://github.com/equihuam/Dash-mapa/raw/bs4d/i-Gamma-3.png",
   opacity = 1.0)
 
-
-
 ui <- bs4DashPage(
       freshTheme = tema,
       title = "Índice de Integridad Ecosistémica - México",
@@ -130,6 +130,12 @@ ui <- bs4DashPage(
           collapsed = FALSE,
           
           verbatimTextOutput("muni"),
+
+          plotlyOutput(outputId = "iie_dial",
+                       width = "100%",
+                       height = "11em"
+          ),
+          
           
           selectInput(
             inputId = "tipo_anp",
@@ -209,6 +215,7 @@ ui <- bs4DashPage(
     )
 
 server <- function(input, output, session) {
+
   output$intro <- renderUI(markdown(readLines("explicación.txt")),
                            outputArgs = )
   output$modelo <-  renderImage({
@@ -451,7 +458,7 @@ server <- function(input, output, session) {
     return(mapa_r)
   })
 
-  iie_2018_ini <- reactive({
+  iie_2018 <- reactive({
     iie_2018 <- datos_edos |> 
       filter(input$estado == NOMGEO) |> 
       mutate(iie = format(iie.2018_mean, digits = 2, 
@@ -460,14 +467,15 @@ server <- function(input, output, session) {
   })
 
   vals_ini <- eventReactive(input$estado, {
-      tibble(cotas_iie = c(cuantiles_iie, iie_2018_ini()$`iie.2018_mean`))
+      tibble(cotas_iie = c(cuantiles_iie, iie_2018()$`iie.2018_mean`))
      })
   
   valores <- reactive({
     if(is.null(input$map_shape_click)) return(vals_ini())
-    else {
-         iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == input$map_shape_click$id]
-         return(tibble(cotas_iie = c(cuantiles_iie, iie)))
+    else 
+      {
+        iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == input$map_shape_click$id]
+        return(tibble(cotas_iie = c(cuantiles_iie, iie)))
        } 
     })
   
@@ -492,8 +500,25 @@ server <- function(input, output, session) {
       paste0("Estado:\n  ",
              input$estado,
              "\nIIE-2018: ",
-             iie_2018_ini()$iie, " %\n",
+             iie_2018()$iie, " %\n",
              "ANPs: ", num_anp))
+    
+    output$iie_dial <- renderPlotly(
+      fig <- plot_ly(
+        type = "indicator",
+        title = list(text = "IIE 2018", font = list(size = 16)),
+        value = iie_2018()$iie,
+        number = list(suffix = "%", font= list(size = 12)),
+        gauge = list(
+          axis =list(range = list(NULL, 100)),
+          bar = list(color = "black"),
+          steps = list(
+            list(range = c(0, 33.3), color = "red"),
+            list(range = c(33.3, 66.6), color = "yellow"),
+            list(range = c(66.6, 100), color = "lightgreen"))),
+        mode = "gauge+number") %>%
+        layout(margin = list(l=25,r=35))
+    )
     })
   
   
@@ -507,8 +532,26 @@ server <- function(input, output, session) {
       paste0("Estado:\n  ",
              input$estado,
              "\nIIE-2018: ",
-             iie_2018_ini()$iie, " %\n",
+             iie_2018()$iie, " %\n",
              "ANPs: ", num_anp))
+    
+    output$iie_dial <- renderPlotly(
+      fig <- plot_ly(
+        type = "indicator",
+        title = list(text = "IIE 2018", font = list(size = 16)),
+        value = iie_2018()$iie,
+        number = list(suffix = "%", font= list(size = 12)),
+        gauge = list(
+          axis =list(range = list(NULL, 100)),
+          bar = list(color = "black"),
+          steps = list(
+            list(range = c(0, 33.3), color = "red"),
+            list(range = c(33.3, 66.6), color = "yellow"),
+            list(range = c(66.6, 100), color = "lightgreen"))),
+        mode = "gauge+number") %>%
+        layout(margin = list(l=25,r=35))
+    )
+    
   })
 
   observeEvent(input$tipo_anp, {
@@ -521,8 +564,25 @@ server <- function(input, output, session) {
       paste0("Estado:\n  ",
              input$estado,
              "\nIIE-2018: ",
-             iie_2018_ini()$iie, " %\n",
+             iie_2018()$iie, " %\n",
              "ANPs: ", num_anp))
+    
+    output$iie_dial <- renderPlotly(
+      fig <- plot_ly(
+        type = "indicator",
+        title = list(text = "IIE 2018", font = list(size = 16)),
+        value = iie_2018()$iie,
+        number = list(suffix = "%", font= list(size = 12)),
+        gauge = list(
+          axis =list(range = list(NULL, 100)),
+          bar = list(color = "black"),
+          steps = list(
+            list(range = c(0, 33.3), color = "red"),
+            list(range = c(33.3, 66.6), color = "yellow"),
+            list(range = c(66.6, 100), color = "lightgreen"))),
+        mode = "gauge+number") %>%
+        layout(margin = list(l=25,r=35))
+    )
   })
   
   #click on polygon
@@ -538,6 +598,22 @@ server <- function(input, output, session) {
       municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
       output$muni <- renderText(paste0("Municipio:\n  ", municipio,
                                        "\nIIE-2018: ", iie_2018, " %"))
+      output$iie_dial <- renderPlotly(
+        fig <- plot_ly(
+          type = "indicator",
+          title = list(text = "IIE 2018", font = list(size = 16)),
+          value = iie_2018,
+          number = list(suffix = "%", font= list(size = 12)),
+          gauge = list(
+            axis =list(range = list(NULL, 100)),
+            bar = list(color = "black"),
+            steps = list(
+              list(range = c(0, 33.3), color = "red"),
+              list(range = c(33.3, 66.6), color = "yellow"),
+              list(range = c(66.6, 100), color = "lightgreen"))),
+          mode = "gauge+number") %>%
+          layout(margin = list(l=25,r=35))
+      )
     } else
     {
       if (str_detect(mapa_click$group, "ANP"))
@@ -547,6 +623,22 @@ server <- function(input, output, session) {
         anp <- mapa_v_anp()$NOMBRE[mapa_v_anp()$id_anp == mapa_click$id]
         output$muni <- renderText(paste0("ANP:\n  ", anp,
                                          "\nIIE-2018: ", iie_2018, " %"))
+        output$iie_dial <- renderPlotly(
+          fig <- plot_ly(
+            type = "indicator",
+            title = list(text = "IIE 2018", font = list(size = 16)),
+            value = iie_2018,
+            number = list(suffix = "%", font= list(size = 12)),
+            gauge = list(
+              axis =list(range = list(NULL, 100)),
+              bar = list(color = "black"),
+              steps = list(
+                list(range = c(0, 33.3), color = "red"),
+                list(range = c(33.3, 66.6), color = "yellow"),
+                list(range = c(66.6, 100), color = "lightgreen"))),
+            mode = "gauge+number") %>%
+            layout(margin = list(l=25,r=35))
+        )
       }
     }
     
