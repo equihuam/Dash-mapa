@@ -23,9 +23,9 @@ dial_iie <- function (lugar, valor_iie = 0, n_anp = 0)
     n_anp_tx <- paste0("\n<b>Número de ANP:</b> ", n_anp)
   
   lugar_tx <- str_wrap(lugar, 
-                       width = 26, 
+                       width = 25, 
                        indent = 0, 
-                       exdent = 4,
+                       exdent = 3,
                        whitespace_only = TRUE ) 
   
   fig <- plot_ly(
@@ -568,6 +568,11 @@ server <- function(input, output, session) {
   observeEvent(input$map_v_shape_click, {
     colores(c("red", "red", "blue"))
     mapa_click <- input$map_v_shape_click
+    
+    if (anp_edo()$anp_id[1] == "sin datos")
+      num_anp <- 0
+    else
+      num_anp <- nrow(anp_edo())
 
     if (str_detect(mapa_click$group, "muni"))
     {
@@ -589,7 +594,7 @@ server <- function(input, output, session) {
         output$iie_dial <- renderPlotly(
           dial_iie(lugar =paste0("<b>ANP:</b> ", anp), 
                    valor_iie = iie_2018, 
-                   n_anp = -1))
+                   n_anp = num_anp))
       }
     }
   }) 
