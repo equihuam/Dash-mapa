@@ -8,8 +8,50 @@ library(sys)
 library(bs4Dash)
 library(dplyr)
 library(fresh)
+library(flexdashboard)
 library(stringr)
 library(rmapshaper)
+library(plotly)
+
+
+
+dial_iie <- function (lugar, valor_iie = 0, n_anp = 0)
+{
+  if (n_anp < 0 )
+    n_anp_tx <- ""
+  else
+    n_anp_tx <- paste0("\n<b>Número de ANP:</b> ", n_anp)
+  
+  lugar_tx <- str_wrap(lugar, 
+                       width = 25, 
+                       indent = 0, 
+                       exdent = 3,
+                       whitespace_only = TRUE ) 
+  
+  fig <- plot_ly(
+    type = "indicator",
+    title = list(text = "IIE 2018", font = list(size = 16)),
+    value = valor_iie,
+    number = list(suffix = "%", font= list(size = 12)),
+    gauge = list(
+      axis =list(range = list(NULL, 100)),
+      bar = list(color = "black"),
+      steps = list(
+        list(range = c(0, 33.3), color = "red"),
+        list(range = c(33.3, 66.6), color = "yellow"),
+        list(range = c(66.6, 100), color = "lightgreen"))),
+    mode = "gauge+number") |> 
+    layout(margin = list(l=25,r=35, b = 45, t = 25), 
+           annotations = list(x = -0.2, y = -0.35,
+                              text = paste0(lugar_tx, n_anp_tx),
+                              showarrow = F, xref='container', yref='container',
+                              xanchor ='left', yanchor='auto',
+                              xshift = 0,
+                              yshift=0,
+                              font=list(size=12, color="gray40")))
+    
+    return(fig)
+}
 
 
 mapas_iie_muni_r <- list.files("./Estados/",
@@ -71,10 +113,8 @@ tema <- bs4Dash_theme(
 i_gamma <- dashboardBrand(
   title = "Integridad Ecosistémica",
   href = "http://i-gamma.net/",
-  image = "https://github.com/equihuam/Dash-mapa/raw/bs4d/i-Gamma-3.png",
+  image = "https://github.com/equihuam/Dash-mapa/raw/main/i-Gamma-3.png",
   opacity = 1.0)
-
-
 
 ui <- bs4DashPage(
       freshTheme = tema,
@@ -129,7 +169,11 @@ ui <- bs4DashPage(
           width = 12,
           collapsed = FALSE,
           
-          verbatimTextOutput("muni"),
+          plotlyOutput(outputId = "iie_dial",
+                       width = "100%",
+                       height = "11em"
+          ),
+          
           
           selectInput(
             inputId = "tipo_anp",
@@ -209,6 +253,7 @@ ui <- bs4DashPage(
     )
 
 server <- function(input, output, session) {
+
   output$intro <- renderUI(markdown(readLines("explicación.txt")),
                            outputArgs = )
   output$modelo <-  renderImage({
@@ -369,6 +414,15 @@ server <- function(input, output, session) {
   
   # Cambio de mapa
   
+  anp_edo_gral <- reactive({
+    edo <- datos_edos$ID_ENT[input$estado == datos_edos$NOMGEO]
+    
+    anp_edo_gral <- datos_anp |>
+        filter(grepl(edo, ESTADOS_LST)) |>
+        select(anp_id) |> 
+        nrow()
+  })
+  
   anp_edo <- reactive({
     edo <- datos_edos$ID_ENT[input$estado == datos_edos$NOMGEO]
     
@@ -382,7 +436,7 @@ server <- function(input, output, session) {
       
       if(nrow(anp_edo) == 0) anp_edo <- data.frame(anp_id = "sin datos")
     }
-    return(anp_edo)
+    anp_edo
   })
   
 
@@ -451,7 +505,7 @@ server <- function(input, output, session) {
     return(mapa_r)
   })
 
-  iie_2018_ini <- reactive({
+  iie_2018 <- reactive({
     iie_2018 <- datos_edos |> 
       filter(input$estado == NOMGEO) |> 
       mutate(iie = format(iie.2018_mean, digits = 2, 
@@ -460,14 +514,15 @@ server <- function(input, output, session) {
   })
 
   vals_ini <- eventReactive(input$estado, {
-      tibble(cotas_iie = c(cuantiles_iie, iie_2018_ini()$`iie.2018_mean`))
+      tibble(cotas_iie = c(cuantiles_iie, iie_2018()$`iie.2018_mean`))
      })
   
   valores <- reactive({
     if(is.null(input$map_shape_click)) return(vals_ini())
-    else {
-         iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == input$map_shape_click$id]
-         return(tibble(cotas_iie = c(cuantiles_iie, iie)))
+    else 
+      {
+        iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == input$map_shape_click$id]
+        return(tibble(cotas_iie = c(cuantiles_iie, iie)))
        } 
     })
   
@@ -482,33 +537,17 @@ server <- function(input, output, session) {
               else c("dotted", "dashed", "solid")})
   
   
-  observeEvent(input$estado, {
-    if (anp_edo()$anp_id[1] == "sin datos")
-      num_anp <- 0
-    else
-      num_anp <- nrow(anp_edo())
-
-    output$muni <- renderText(
-      paste0("Estado:\n  ",
-             input$estado,
-             "\nIIE-2018: ",
-             iie_2018_ini()$iie, " %\n",
-             "ANPs: ", num_anp))
-    })
-  
-  
   observeEvent(anp_edo(),{
     if (anp_edo()$anp_id[1] == "sin datos")
       num_anp <- 0
     else
       num_anp <- nrow(anp_edo())
     
-    output$muni <- renderText(
-      paste0("Estado:\n  ",
-             input$estado,
-             "\nIIE-2018: ",
-             iie_2018_ini()$iie, " %\n",
-             "ANPs: ", num_anp))
+    output$iie_dial <- renderPlotly(
+      dial_iie(lugar = paste0("<b>Estado:</b> ",
+                              input$estado),
+               valor_iie = iie_2018()$iie,
+               n_anp = anp_edo_gral()))
   })
 
   observeEvent(input$tipo_anp, {
@@ -517,12 +556,11 @@ server <- function(input, output, session) {
     else
       num_anp <- nrow(anp_edo())
     
-    output$muni <- renderText(
-      paste0("Estado:\n  ",
-             input$estado,
-             "\nIIE-2018: ",
-             iie_2018_ini()$iie, " %\n",
-             "ANPs: ", num_anp))
+    output$iie_dial <- renderPlotly(
+      dial_iie(lugar = paste0("<b>Estado:</b> ",
+                              input$estado),
+               valor_iie = iie_2018()$iie,
+               n_anp = num_anp))
   })
   
   #click on polygon
@@ -530,14 +568,21 @@ server <- function(input, output, session) {
   observeEvent(input$map_v_shape_click, {
     colores(c("red", "red", "blue"))
     mapa_click <- input$map_v_shape_click
+    
+    if (anp_edo()$anp_id[1] == "sin datos")
+      num_anp <- 0
+    else
+      num_anp <- nrow(anp_edo())
 
     if (str_detect(mapa_click$group, "muni"))
     {
       iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == mapa_click$id]
       iie_2018 <- format(iie, digits = 2, nsmall = 1)
       municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
-      output$muni <- renderText(paste0("Municipio:\n  ", municipio,
-                                       "\nIIE-2018: ", iie_2018, " %"))
+      output$iie_dial <- renderPlotly(
+        dial_iie(lugar =paste0("<b>Municipio:</b> ", municipio), 
+                 valor_iie = iie_2018,
+                 n_anp = -1))  
     } else
     {
       if (str_detect(mapa_click$group, "ANP"))
@@ -545,25 +590,14 @@ server <- function(input, output, session) {
         iie <- mapa_v_anp()$IIE_2018_mean[mapa_v_anp()$id_anp == mapa_click$id]
         iie_2018 <- format(iie, digits = 2, nsmall = 1)
         anp <- mapa_v_anp()$NOMBRE[mapa_v_anp()$id_anp == mapa_click$id]
-        output$muni <- renderText(paste0("ANP:\n  ", anp,
-                                         "\nIIE-2018: ", iie_2018, " %"))
+
+        output$iie_dial <- renderPlotly(
+          dial_iie(lugar =paste0("<b>ANP:</b> ", anp), 
+                   valor_iie = iie_2018, 
+                   n_anp = num_anp))
       }
     }
-    
   }) 
-
-  # observeEvent(input$map_r_shape_click, {
-  #   colores(c("red", "red", "blue"))
-  #   mapa_click <- input$map_r_shape_click
-  #   municipio <- mapa_v()$NOMGEO[mapa_v()$id == mapa_click$id]
-  #   
-  #   iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == mapa_click$id]
-  #   iie_2018 <- format(iie, digits = 2, nsmall = 1)
-  #   output$muni <- renderText(paste0("Municipio:\n  ", municipio,
-  #                                    "\nIIE-2018: ", iie_2018, " %"))
-  # }) 
-  
-    
 }
 
 shinyApp(ui, server)
