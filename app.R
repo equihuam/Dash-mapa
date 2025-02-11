@@ -154,7 +154,7 @@ ui <- bs4DashPage(
         minified = FALSE,
         collapsed = FALSE,
         elevation = 5,
-        width = "17%",
+        width = "13%",
         overlay = FALSE,
         
         selectInput(
