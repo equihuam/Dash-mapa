@@ -99,6 +99,10 @@ datos_anp <- read.csv("./tablas/datos-anp-federales.csv")
 
 datos_cue <- read.csv("./tablas/datos_cuencas.csv")
 
+datos_cuencas <- vect("./Agua/Subcuencas-hidrográficas_continental_Albers.gpkg") %>% 
+  as_tibble()
+
+
 # Tema y arrreglos visuales ----
 tema <- bs4Dash_theme(
     primary = "lightblue",
