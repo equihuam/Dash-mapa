@@ -99,8 +99,6 @@ datos_anp <- read.csv("./tablas/datos-anp-federales.csv")
 
 datos_cuencas <- read.csv("./Agua/datos-cuencas-hidrográficas.csv")
 
-identical(cue, datos_cuencas)
-
 # Tema y arrreglos visuales ----
 tema <- bs4Dash_theme(
     primary = "lightblue",
@@ -292,11 +290,23 @@ server <- function(input, output, session) {
       if (anp_edo()$anp_id[1] != "sin datos")
       {
           leaflet() |> 
+          addMapPane(name = "cue", zIndex = 6) |>
           addMapPane(name = "muni", zIndex = 5) |> 
           addMapPane(name = "anp", zIndex = 4) |> 
           addMapPane(name = "iie_anp", zIndex = 3) |> 
           addMapPane(name = "iie_raster", zIndex = 2) |> 
           addMapPane(name = "iie_muni", zIndex = 1) |> 
+          addPolygons(
+            data = mapa_v_cue(),
+            group = "cuencas",
+            options = pathOptions(pane = "cue"),
+            fillOpacity = 0,
+            weight = 1,
+            color = "green",
+            layerId = ~ id,
+            opacity = 1,
+            stroke = TRUE,
+            smoothFactor = 0.03) |>
           addPolygons(
             data = mapa_v(),
             group = "municipios",
@@ -344,6 +354,7 @@ server <- function(input, output, session) {
             smoothFactor = 0.03) |> 
           addLayersControl(
             overlayGroups = c(
+              "cuencas",
               "municipios",
               "ANP",
               "IIE ANP",              
@@ -355,9 +366,21 @@ server <- function(input, output, session) {
       } else
       {
           leaflet() |> 
+          addMapPane(name = "cue", zIndex = 5) |>
           addMapPane(name = "muni", zIndex = 4) |> 
           addMapPane(name = "anp", zIndex = 3) |> 
           addMapPane(name = "iie_muni", zIndex = 2) |> 
+          addPolygons(
+            data = mapa_v_cue(),
+            group = "cuencas",
+            options = pathOptions(pane = "cue"),
+            fillOpacity = 1,
+            weight = 1,
+            color = "green",
+            layerId = ~ id,
+            opacity = 1,
+            stroke = TRUE,
+            smoothFactor = 0.03) |>
           addPolygons(
             data = mapa_v(),
             options = pathOptions(pane = "muni"),
@@ -384,9 +407,11 @@ server <- function(input, output, session) {
             layerId = ~ id,
             smoothFactor = 0.03) |> 
           addLayersControl(
-            overlayGroups = c("municipios",
-                              "IIE raster", 
-                              "IIE municipal"),
+            overlayGroups = c(
+              "cuencas",
+              "municipios",
+              "IIE raster", 
+              "IIE municipal"),
             options = layersControlOptions(collapsed = FALSE)) |> 
           hideGroup(group = c("IIE municipal"))
       }
@@ -495,6 +520,9 @@ server <- function(input, output, session) {
         else
           mapa <- rbind(mapa, vect(paste0("ANP/anp_id_", m, ".gpkg")))
       }
+      
+      mapa
+      
       mapa_v_anp <- st_as_sf(mapa) |> 
         st_transform(WGS84) |> 
         mutate(IIE_2018_mean = iie_anp_mean * 100,
@@ -508,14 +536,14 @@ server <- function(input, output, session) {
     for (m in cue_edo()$CVE_CUE)
     {
       if (m == cue_edo()$CVE_CUE[1])
-        mapa <- vect(paste0("Agua/CVE_CUE_", m, ".gpkg"))
+        mapa <- vect(paste0("./Agua/CVE_CUE_", m, ".gpkg"))
       else
-        mapa <- rbind(mapa, vect(paste0("Agua/CVE_CUE_", m, ".gpkg")))
+        mapa <- rbind(mapa, vect(paste0("./Agua/CVE_CUE_", m, ".gpkg")))
     }
     mapa_v_cue <- st_as_sf(mapa) |> 
       st_transform(WGS84) |> 
-      mutate(IIE_2018_mean = iie_2018_mean * 100,
-             id_anp = 1:n())
+      mutate(IIE_2018_mean = `iie-2018_mean` * 100,
+             id_cue = 1:n())
   })
   
   # mapa_v_anp_buf <- reactive({
