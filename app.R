@@ -97,12 +97,9 @@ datos_edos <- read.csv("./tablas/datos_edos.csv", header = TRUE) |>
 
 datos_anp <- read.csv("./tablas/datos-anp-federales.csv")
 
-datos_cuencas <- vect("./Agua/Subcuencas-hidrográficas_continental_Albers.gpkg") %>% 
-  as_tibble()
+datos_cuencas <- read.csv("./Agua/datos-cuencas-hidrográficas.csv")
 
-vect("./Agua/dato-cuenca/CVE_CUE_RH01A.gpkg")
-datos_cuencas$CVE_SUBCUE[str_detect(datos_cuencas$CVE_SUBCUE, "RH01A")]
-
+identical(cue, datos_cuencas)
 
 # Tema y arrreglos visuales ----
 tema <- bs4Dash_theme(
@@ -442,9 +439,10 @@ server <- function(input, output, session) {
   cue_edo_gral <- reactive({
     edo <- datos_edos$ID_ENT[input$estado == datos_edos$NOMGEO]
     
-    cue_edo_gral <- datos_cue |>
-      filter(grepl(edo, ESTADOS_LST)) |>
+    cue_edo_gral <- datos_cuencas |>
+      filter(grepl(edo, EDOS_CUE)) |>
       select(CVE_CUE) |> 
+      unique() |> 
       nrow()
   })
     
@@ -456,13 +454,24 @@ server <- function(input, output, session) {
     {
       anp_edo <- datos_anp |>
         filter(grepl(edo, ESTADOS_LST) & 
-                 str_detect(CAT_MANEJO, paste0(input$tipo_anp, collapse = "|"))) |>
+                 str_detect(CAT_MANEJO, 
+                            paste0(input$tipo_anp, collapse = "|"))) |>
         select(anp_id)
       
       if(nrow(anp_edo) == 0) anp_edo <- data.frame(anp_id = "sin datos")
     }
     anp_edo
   })
+  
+  
+  cue_edo <- reactive({
+    edo <- datos_edos$ID_ENT[input$estado == datos_edos$NOMGEO]
+    
+    cue_edo <- datos_cuencas |>
+      filter(grepl(edo, EDOS_CUE)) |>
+      select(CVE_CUE) |> 
+      unique()
+  })  
   
 
   mapa_v <- reactive({
@@ -475,6 +484,7 @@ server <- function(input, output, session) {
              id = 1:n())
     })
 
+  # Mapa combinado de todas las ANP de los tipos elegidos en la entiad
   mapa_v_anp <- reactive({
     if (anp_edo()$anp_id[1] != "sin datos")
     {
@@ -490,6 +500,22 @@ server <- function(input, output, session) {
         mutate(IIE_2018_mean = iie_anp_mean * 100,
                id_anp = 1:n())
     }
+  })
+  
+  
+  # Mapa combinado de todas las cuencas de la entiad seleccionada
+  mapa_v_cue <- reactive({
+    for (m in cue_edo()$CVE_CUE)
+    {
+      if (m == cue_edo()$CVE_CUE[1])
+        mapa <- vect(paste0("Agua/CVE_CUE_", m, ".gpkg"))
+      else
+        mapa <- rbind(mapa, vect(paste0("Agua/CVE_CUE_", m, ".gpkg")))
+    }
+    mapa_v_cue <- st_as_sf(mapa) |> 
+      st_transform(WGS84) |> 
+      mutate(IIE_2018_mean = iie_2018_mean * 100,
+             id_anp = 1:n())
   })
   
   # mapa_v_anp_buf <- reactive({
