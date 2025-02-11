@@ -8,7 +8,6 @@ library(sys)
 library(bs4Dash)
 library(dplyr)
 library(fresh)
-library(flexdashboard)
 library(stringr)
 library(rmapshaper)
 library(plotly)
@@ -78,7 +77,7 @@ edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x)
               mutate(edo = str_replace_all(edo, "_", " ")) |> 
               arrange(edo)
 
-# La tabla de cantiles inicia con el año del mapa de iie
+# La tabla de cuantiles inicia con el año del mapa de iie
 cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.csv")[,2:3])
 
 
@@ -88,6 +87,10 @@ datos_edos <- read.csv("datos_edos.csv", header = TRUE) |>
 
 
 datos_anp <- read.csv("datos-anp-federales.csv")
+
+datos_cuenca <- vect("./Agua/Subcuencas-hidrográficas_continental_Albers.gpkg") %>% 
+  as.data.frame(v)
+
 
 #as_tibble(search_vars_bs4dash("navbar"))
 
@@ -450,6 +453,17 @@ server <- function(input, output, session) {
              id = 1:n())
     })
 
+  cuenca_v <- reactive({
+    colores(c("blue", "blue", "cyan"))
+    agua_v <- str_replace_all(
+      edos_lista$vect[grepl(input$estado, edos_lista$edo)][1], " ", "_")
+    cuenca_v <- st_read(edo_v, quiet = TRUE) |>
+      st_transform(WGS84) |> 
+      mutate(IIE_2018_mean = IIE_2018_mean * 100,
+             id = 1:n())
+  })
+  
+  
   mapa_v_anp <- reactive({
     if (anp_edo()$anp_id[1] != "sin datos")
     {
@@ -466,23 +480,6 @@ server <- function(input, output, session) {
                id_anp = 1:n())
     }
   })
-  
-  # mapa_v_anp_buf <- reactive({
-  #   if (anp_edo()$anp_id[1] != "sin datos")
-  #   {
-  #     for (m in anp_edo()$anp_id)
-  #     {
-  #       if (m == anp_edo()$anp_id[1])
-  #         mapa <- vect(paste0("ANP/", m, ".gpkg"))
-  #       else
-  #         mapa <- rbind(mapa, vect(paste0("ANP/", m, ".gpkg")))
-  #     }
-  #     mapa_v_anp <- st_as_sf(mapa) |> 
-  #       st_transform(WGS84) |> 
-  #       mutate(IIE_2018_mean = iie_anp_mean * 100,
-  #              id_anp = 1:n())
-  #   }
-  # })
   
           
   mapa_r <- reactive({
