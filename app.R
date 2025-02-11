@@ -15,16 +15,21 @@ library(plotly)
 
 
 
-dial_iie <- function (lugar, valor_iie = 0, n_anp = 0)
+# Preparación de funciones y datos preliminares -------------------------
+
+# función para dibujar dial que muestra valor de IIE----
+dial_iie <- function (lugar, valor_iie = 0, n_anp = 0, n_cue = 0)
 {
   if (n_anp < 0 )
     n_anp_tx <- ""
   else
-    n_anp_tx <- paste0("\n<b>Número de ANP:</b> ", n_anp)
+    n_anp_tx <- paste0("\n  <b>Número de ANP:</b> ", n_anp)
+  
+  n_cue_tx <- paste0("\n  <b>Número de cuencas:</b> ", n_cue)
   
   lugar_tx <- str_wrap(lugar, 
-                       width = 25, 
-                       indent = 0, 
+                       width = 32, 
+                       indent = 1, 
                        exdent = 3,
                        whitespace_only = TRUE ) 
   
@@ -43,7 +48,7 @@ dial_iie <- function (lugar, valor_iie = 0, n_anp = 0)
     mode = "gauge+number") |> 
     layout(margin = list(l=25,r=35, b = 45, t = 25), 
            annotations = list(x = -0.2, y = -0.35,
-                              text = paste0(lugar_tx, n_anp_tx),
+                              text = paste0(lugar_tx, n_anp_tx, n_cue_tx),
                               showarrow = F, xref='container', yref='container',
                               xanchor ='left', yanchor='auto',
                               xshift = 0,
@@ -53,7 +58,7 @@ dial_iie <- function (lugar, valor_iie = 0, n_anp = 0)
     return(fig)
 }
 
-
+# lista de archivos de mapas de estados: raster y vectoriales ----
 mapas_iie_muni_r <- list.files("./Estados/",
                         full.names = TRUE, 
                         pattern = ".tif$")
@@ -61,37 +66,40 @@ mapas_iie_muni_r <- list.files("./Estados/",
 mapas_iie_muni_v <- list.files("./Estados/",
                                pattern = ".gpkg$",
                                full.names = TRUE)
-anp_tipos <- read.csv("categorías_de_manejo.csv")
 
+WGS84 <- "+init=EPSG:4326"  # proyección reqqerida por leaflet
+
+# arreglo del histograma y paleta de colores ----
 bins<-c(0,12.5,25,37.5,50, 62.5,75,87.5, 95, 100)
 cal <- colorBin(palette="RdYlGn", 
                 domain = c(0, 100), 
                 bins=bins,
                 na.color = "#00000000")
 
+# datos tabulares de referencia ----------------------------
 
-WGS84 <- "+init=EPSG:4326"
+anp_tipos <- read.csv("./tablas/categorías_de_manejo.csv")
+
+# lista de estados y nombre de archivos vectoriales y raster
 edos_lista <- tibble(edo = unlist(lapply(mapas_iie_muni_v, function(x) 
-                     sub(".gpkg", "", basename(x)))), 
-                     vect = mapas_iie_muni_v,
-                     rast = mapas_iie_muni_r) |> 
-              mutate(edo = str_replace_all(edo, "_", " ")) |> 
-              arrange(edo)
+  sub(".gpkg", "", basename(x)))), 
+  vect = mapas_iie_muni_v,
+  rast = mapas_iie_muni_r) |> 
+  mutate(edo = str_replace_all(edo, "_", " ")) |> 
+  arrange(edo)
 
-# La tabla de cantiles inicia con el año del mapa de iie
-cuantiles_iie <- as.numeric(read.csv("cuantiles_iie.csv")[,2:3])
+# La tabla de cuantiles inicia con el año del mapa de iie
+cuantiles_iie <- as.numeric(read.csv("./tablas/cuantiles_iie.csv")[,2:3])
 
-
-datos_edos <- read.csv("datos_edos.csv", header = TRUE) |> 
+datos_edos <- read.csv("./tablas/datos_edos.csv", header = TRUE) |> 
               mutate(NOMGEO = if_else(NOMGEO == "México",
                                       "Estado de México", NOMGEO))
 
+datos_anp <- read.csv("./tablas/datos-anp-federales.csv")
 
-datos_anp <- read.csv("datos-anp-federales.csv")
+datos_cue <- read.csv("./tablas/datos_cuencas.csv")
 
-#as_tibble(search_vars_bs4dash("navbar"))
-
-# Tema
+# Tema y arrreglos visuales ----
 tema <- bs4Dash_theme(
     primary = "lightblue",
     warning = "#272c30",
@@ -116,6 +124,9 @@ i_gamma <- dashboardBrand(
   image = "https://github.com/equihuam/Dash-mapa/raw/main/i-Gamma-3.png",
   opacity = 1.0)
 
+# fin de preparación ----------------------------------------------------
+
+# Interfaz --------------------------------------------------------------
 ui <- bs4DashPage(
       freshTheme = tema,
       title = "Índice de Integridad Ecosistémica - México",
@@ -171,9 +182,8 @@ ui <- bs4DashPage(
           
           plotlyOutput(outputId = "iie_dial",
                        width = "100%",
-                       height = "11em"
+                       height = "12em"
           ),
-          
           
           selectInput(
             inputId = "tipo_anp",
@@ -250,10 +260,12 @@ ui <- bs4DashPage(
           )
         )
       )
-    )
+) # fin interfaz --------------------------------------------------------
 
+# Implementación del servidor ----------------------------------------
 server <- function(input, output, session) {
-
+  
+  # construcción de la interaz
   output$intro <- renderUI(markdown(readLines("explicación.txt")),
                            outputArgs = )
   output$modelo <-  renderImage({
@@ -263,7 +275,6 @@ server <- function(input, output, session) {
          height="400",
          style="vertical-align:middle;margin:50px 10px")},
     deleteFile = FALSE)
-  
     
   output$map_v <-  renderLeaflet({
       pixeles <- mapa_r()
@@ -279,15 +290,15 @@ server <- function(input, output, session) {
       if (anp_edo()$anp_id[1] != "sin datos")
       {
           leaflet() |> 
-          addMapPane(name = "uno", zIndex = 5) |> 
-          addMapPane(name = "dos", zIndex = 4) |> 
-          addMapPane(name = "tres", zIndex = 3) |> 
-          addMapPane(name = "cuatro", zIndex = 2) |> 
-          addMapPane(name = "cinco", zIndex = 1) |>
+          addMapPane(name = "muni", zIndex = 5) |> 
+          addMapPane(name = "anp", zIndex = 4) |> 
+          addMapPane(name = "iie_anp", zIndex = 3) |> 
+          addMapPane(name = "iie_raster", zIndex = 2) |> 
+          addMapPane(name = "iie_muni", zIndex = 1) |> 
           addPolygons(
             data = mapa_v(),
             group = "municipios",
-            options = pathOptions(pane = "uno"),
+            options = pathOptions(pane = "muni"),
             fillOpacity = 0,
             weight = 1,
             color = "darkblue",
@@ -298,7 +309,7 @@ server <- function(input, output, session) {
           addPolygons(
             data = mapa_v_anp(),
             group = "ANP",
-            options = pathOptions(pane = "dos"),
+            options = pathOptions(pane = "anp"),
             fillOpacity = 0,
             weight = 1,
             color = "cyan",
@@ -310,21 +321,21 @@ server <- function(input, output, session) {
             data = mapa_v_anp(),
             group = "IIE ANP",
             layerId = ~ id_anp,
-            options = pathOptions(pane = "tres"),
+            options = pathOptions(pane = "iie_anp"),
             fillColor = ~ cal(IIE_2018_mean),
             fillOpacity = 1,
             stroke = FALSE,
             smoothFactor = 0.03) |> 
           addRasterImage( 
             group = "IIE raster",
-            options = pathOptions(pane = "cuatro"),
+            options = pathOptions(pane = "iie_raster"),
             x = pixeles, 
             colors = cal) |> 
           addPolygons(
             data = mapa_v_filtrado,
             fillColor = ~ cal(IIE_2018_mean),
             group = "IIE municipal",
-            options = pathOptions(pane = "cinco"),
+            options = pathOptions(pane = "iie_muni"),
             fillOpacity = 1,
             stroke = FALSE,
             layerId = ~ id,
@@ -342,12 +353,12 @@ server <- function(input, output, session) {
       } else
       {
           leaflet() |> 
-          addMapPane(name = "uno", zIndex = 4) |> 
-          addMapPane(name = "dos", zIndex = 3) |> 
-          addMapPane(name = "tres", zIndex = 2) |> 
+          addMapPane(name = "muni", zIndex = 4) |> 
+          addMapPane(name = "anp", zIndex = 3) |> 
+          addMapPane(name = "iie_muni", zIndex = 2) |> 
           addPolygons(
             data = mapa_v(),
-            options = pathOptions(pane = "uno"),
+            options = pathOptions(pane = "muni"),
             group = "municipios",
             fillOpacity = 0,
             weight = 1,
@@ -357,13 +368,13 @@ server <- function(input, output, session) {
             stroke = TRUE,
             smoothFactor = 0.03) |>
           addRasterImage( 
-            options = pathOptions(pane = "dos"),
+            options = pathOptions(pane = "anp"),
             group = "IIE raster",
             x = pixeles, 
             colors = cal) |>
           addPolygons(
             data = mapa_v_filtrado,
-            options = pathOptions(pane = "tres"),
+            options = pathOptions(pane = "iie_muni"),
             fillColor = ~ cal(IIE_2018_mean),
             group = "IIE municipal",
             fillOpacity = 1,
@@ -411,9 +422,9 @@ server <- function(input, output, session) {
   # Información por desplegar
   output$edo_tit0 <- renderText({input$estado})
   
-  
+  # componentes reactive y reactiveVal ----------------
+
   # Cambio de mapa
-  
   anp_edo_gral <- reactive({
     edo <- datos_edos$ID_ENT[input$estado == datos_edos$NOMGEO]
     
@@ -422,7 +433,16 @@ server <- function(input, output, session) {
         select(anp_id) |> 
         nrow()
   })
-  
+
+  cue_edo_gral <- reactive({
+    edo <- datos_edos$ID_ENT[input$estado == datos_edos$NOMGEO]
+    
+    cue_edo_gral <- datos_cue |>
+      filter(grepl(edo, ESTADOS_LST)) |>
+      select(CVE_CUE) |> 
+      nrow()
+  })
+    
   anp_edo <- reactive({
     edo <- datos_edos$ID_ENT[input$estado == datos_edos$NOMGEO]
     
@@ -536,18 +556,22 @@ server <- function(input, output, session) {
                 return(c("dotted", "dashed", "solid"))
               else c("dotted", "dashed", "solid")})
   
+  # componentes observe y observeEvent ------------------- 
   
   observeEvent(anp_edo(),{
     if (anp_edo()$anp_id[1] == "sin datos")
       num_anp <- 0
     else
       num_anp <- nrow(anp_edo())
-    
+
+    num_cue = 100
+        
     output$iie_dial <- renderPlotly(
       dial_iie(lugar = paste0("<b>Estado:</b> ",
                               input$estado),
                valor_iie = iie_2018()$iie,
-               n_anp = anp_edo_gral()))
+               n_anp = anp_edo_gral(),
+               n_cue = cue_edo_gral()))
   })
 
   observeEvent(input$tipo_anp, {
@@ -582,7 +606,8 @@ server <- function(input, output, session) {
       output$iie_dial <- renderPlotly(
         dial_iie(lugar =paste0("<b>Municipio:</b> ", municipio), 
                  valor_iie = iie_2018,
-                 n_anp = -1))  
+                 n_anp = -1,
+                 n_cue = cue_edo_gral()))  
     } else
     {
       if (str_detect(mapa_click$group, "ANP"))
@@ -594,11 +619,13 @@ server <- function(input, output, session) {
         output$iie_dial <- renderPlotly(
           dial_iie(lugar =paste0("<b>ANP:</b> ", anp), 
                    valor_iie = iie_2018, 
-                   n_anp = num_anp))
+                   n_anp = num_anp,
+                   n_cue = cue_edo_gral()))
       }
     }
   }) 
-}
+} # Fin de implementación del servidor ----------------------------------
 
+# Ejecución de la aplicación --------------------------------------------
 shinyApp(ui, server)
 
