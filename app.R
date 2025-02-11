@@ -97,10 +97,11 @@ datos_edos <- read.csv("./tablas/datos_edos.csv", header = TRUE) |>
 
 datos_anp <- read.csv("./tablas/datos-anp-federales.csv")
 
-datos_cue <- read.csv("./tablas/datos_cuencas.csv")
-
 datos_cuencas <- vect("./Agua/Subcuencas-hidrográficas_continental_Albers.gpkg") %>% 
   as_tibble()
+
+vect("./Agua/dato-cuenca/CVE_CUE_RH01A.gpkg")
+datos_cuencas$CVE_SUBCUE[str_detect(datos_cuencas$CVE_SUBCUE, "RH01A")]
 
 
 # Tema y arrreglos visuales ----
