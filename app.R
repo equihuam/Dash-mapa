@@ -286,16 +286,17 @@ server <- function(input, output, session) {
       mapa_v_filtrado <- mapa_v() |>
         filter((IIE_2018_mean <= input$iie_max) &
                (IIE_2018_mean > input$iie_min))
-        
+
       if (anp_edo()$anp_id[1] != "sin datos")
       {
           leaflet() |> 
-          addMapPane(name = "cue", zIndex = 6) |>
-          addMapPane(name = "muni", zIndex = 5) |> 
-          addMapPane(name = "anp", zIndex = 4) |> 
-          addMapPane(name = "iie_anp", zIndex = 3) |> 
-          addMapPane(name = "iie_raster", zIndex = 2) |> 
-          addMapPane(name = "iie_muni", zIndex = 1) |> 
+          addMapPane(name = "iie_raster", zIndex = 1) |> 
+          addMapPane(name = "iie_cue", zIndex = 2) |> 
+          addMapPane(name = "cue", zIndex = 3) |>
+          addMapPane(name = "iie_anp", zIndex = 4) |> 
+          addMapPane(name = "anp", zIndex = 5) |> 
+          addMapPane(name = "iie_muni", zIndex = 6) |> 
+          addMapPane(name = "muni", zIndex = 7) |> 
           addPolygons(
             data = mapa_v_cue(),
             group = "cuencas",
@@ -303,7 +304,27 @@ server <- function(input, output, session) {
             fillOpacity = 0,
             weight = 1,
             color = "green",
-            layerId = ~ id,
+            layerId = ~ id_subcue,
+            opacity = 1,
+            stroke = TRUE,
+            smoothFactor = 0.03) |>
+          addPolygons(
+            data = mapa_v_cue(),
+            group = "IIE subcuencas",
+            options = pathOptions(pane = "iie_cue"),
+            fillColor = ~ cal(IIE_2018_mean),
+            fillOpacity = 1,
+            layerId = ~ id_subcue,
+            stroke = FALSE,
+            smoothFactor = 0.03) |>
+          addPolygons(
+            data = mapa_v_cue(),
+            group = "cuencas",
+            options = pathOptions(pane = "cue"),
+            fillOpacity = 0,
+            weight = 1,
+            color = "green",
+            layerId = ~ id_subcue,
             opacity = 1,
             stroke = TRUE,
             smoothFactor = 0.03) |>
@@ -354,32 +375,43 @@ server <- function(input, output, session) {
             smoothFactor = 0.03) |> 
           addLayersControl(
             overlayGroups = c(
-              "cuencas",
               "municipios",
+              "subcuencas",
               "ANP",
-              "IIE ANP",              
-              "IIE raster",
-              "IIE municipal"),
+              "IIE municipal",              
+              "IIE subcuencas",
+              "IIE ANP",
+"IIE raster"),
             options = layersControlOptions(collapsed = FALSE)) |> 
           hideGroup(group = c("IIE municipal", "IIE ANP"))
         
       } else
       {
           leaflet() |> 
-          addMapPane(name = "cue", zIndex = 5) |>
-          addMapPane(name = "muni", zIndex = 4) |> 
-          addMapPane(name = "anp", zIndex = 3) |> 
-          addMapPane(name = "iie_muni", zIndex = 2) |> 
+          addMapPane(name = "iie_raster", zIndex = 1) |> 
+          addMapPane(name = "iie_cue", zIndex = 2) |> 
+          addMapPane(name = "cue", zIndex = 3) |>
+          addMapPane(name = "iie_muni", zIndex = 4) |> 
+          addMapPane(name = "muni", zIndex = 5) |> 
           addPolygons(
             data = mapa_v_cue(),
             group = "cuencas",
             options = pathOptions(pane = "cue"),
-            fillOpacity = 1,
+            fillOpacity = 0,
             weight = 1,
             color = "green",
-            layerId = ~ id,
+            layerId = ~ id_subcue,
             opacity = 1,
             stroke = TRUE,
+            smoothFactor = 0.03) |>
+          addPolygons(
+            data = mapa_v_cue(),
+            group = "IIE subcuencas",
+            options = pathOptions(pane = "iie_cue"),
+            fillColor = ~ cal(IIE_2018_mean),
+            fillOpacity = 1,
+            layerId = ~ id_subcue,
+            stroke = FALSE,
             smoothFactor = 0.03) |>
           addPolygons(
             data = mapa_v(),
@@ -393,7 +425,7 @@ server <- function(input, output, session) {
             stroke = TRUE,
             smoothFactor = 0.03) |>
           addRasterImage( 
-            options = pathOptions(pane = "anp"),
+            options = pathOptions(pane = "iie_raster"),
             group = "IIE raster",
             x = pixeles, 
             colors = cal) |>
@@ -409,9 +441,10 @@ server <- function(input, output, session) {
           addLayersControl(
             overlayGroups = c(
               "cuencas",
+              "IIE subcuencas",
               "municipios",
-              "IIE raster", 
-              "IIE municipal"),
+              "IIE municipal",
+              "IIE raster"),
             options = layersControlOptions(collapsed = FALSE)) |> 
           hideGroup(group = c("IIE municipal"))
       }
@@ -433,7 +466,6 @@ server <- function(input, output, session) {
       geom_histogram(fill = cal(seq(0, 100, by=2)), 
                      binwidth = 2, 
                      na.rm = TRUE, 
-                     color="grey", 
                      show.legend = FALSE) +
       ylab(label = "d(frecuencia)") +
       xlab(label = "Condición ecosistémica") +
@@ -541,9 +573,10 @@ server <- function(input, output, session) {
         mapa <- rbind(mapa, vect(paste0("./Agua/CVE_CUE_", m, ".gpkg")))
     }
     mapa_v_cue <- st_as_sf(mapa) |> 
+      rename(iie_2018_mean = "iie-2018_mean") |> 
       st_transform(WGS84) |> 
-      mutate(IIE_2018_mean = `iie-2018_mean` * 100,
-             id_cue = 1:n())
+      mutate(IIE_2018_mean = iie_2018_mean * 100,
+             id_subcue = 1:n())
   })
   
   # mapa_v_anp_buf <- reactive({
@@ -602,7 +635,8 @@ server <- function(input, output, session) {
       {
         iie <- mapa_v()$IIE_2018_mean[mapa_v()$id == input$map_shape_click$id]
         return(tibble(cotas_iie = c(cuantiles_iie, iie)))
-       } 
+      } 
+    print(iie)
     })
   
 
