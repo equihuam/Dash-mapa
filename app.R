@@ -28,8 +28,8 @@ dial_iie <- function (lugar, valor_iie = 0, n_anp = 0, n_cue = 0)
   n_cue_tx <- paste0("\n  <b>Número de cuencas:</b> ", n_cue)
   
   lugar_tx <- str_wrap(lugar, 
-                       width = 32, 
-                       indent = 1, 
+                       width = 40, 
+                       indent = 3, 
                        exdent = 3,
                        whitespace_only = TRUE ) 
   
@@ -40,7 +40,7 @@ dial_iie <- function (lugar, valor_iie = 0, n_anp = 0, n_cue = 0)
     number = list(suffix = "%", font= list(size = 12)),
     gauge = list(
       axis =list(range = list(NULL, 100)),
-      bar = list(color = "black"),
+      bar = list(color = "gray"),
       steps = list(
         list(range = c(0, 33.3), color = "red"),
         list(range = c(33.3, 66.6), color = "yellow"),
@@ -680,8 +680,8 @@ server <- function(input, output, session) {
                n_anp = num_anp))
   })
   
-  #click on polygon
   
+  #click en un polígono
   observeEvent(input$map_v_shape_click, {
     colores(c("red", "red", "blue"))
     mapa_click <- input$map_v_shape_click
